@@ -1,47 +1,60 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import { gameStore } from "./lib/store";
+  import Setup from "./lib/Setup.svelte";
+  import Scoring from "./lib/Scoring.svelte";
+  import Result from "./lib/Result.svelte";
+  import Stats from "./lib/Stats.svelte";
+  import StartPlayerSelection from "./lib/StartPlayerSelection.svelte";
+  import { fade, slide } from "svelte/transition";
+
+  // Reactive access to store
+  $: phase = $gameStore.currentPhase;
 </script>
 
 <main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
+  <div class="app-header">
+    <h1>🪶 Wingspan Score Helper</h1>
   </div>
 
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <div class="content">
+    {#if phase === "SETUP"}
+      <div in:fade>
+        <Setup />
+      </div>
+    {:else if phase === "SELECTION"}
+      <StartPlayerSelection />
+    {:else if phase === "SCORING"}
+      <div in:slide>
+        <Scoring />
+      </div>
+    {:else if phase === "RESULT"}
+      <div in:fade>
+        <Result />
+      </div>
+    {:else if phase === "STATS"}
+      <div in:fade>
+        <Stats />
+      </div>
+    {/if}
+  </div>
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  .app-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-top: 1rem;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
+
+  h1 {
+    font-size: 1.8rem;
+    color: var(--color-text-primary);
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
+
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
   }
 </style>
