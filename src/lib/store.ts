@@ -37,6 +37,7 @@ export interface Player {
     name: string;
     color: string;
     roundPlacements: number[];
+    nectarPlacements: number[]; // Index 0-2 for Forest, Grassland, Wetland. Values: 0=None, 1=1st, 2=2nd
     scores: Record<Category, number>;
     total: number;
 }
@@ -64,6 +65,8 @@ const ROUND_GOAL_POINTS = [
     [6, 3, 2], // Round 3
     [7, 4, 3]  // Round 4
 ];
+
+const NECTAR_POINTS = [5, 2]; // 1st=5, 2nd=2. Applied to all 3 biomes.
 
 function createGameStore() {
     const { subscribe, set, update } = writable<GameState>(initialState);
@@ -150,6 +153,54 @@ function createGameStore() {
         });
     };
 
+    // Helper to recalculate nectar scores
+    const recalculateNectarScores = (players: Player[]): Player[] => {
+        const playerNectarPoints = new Map<string, number>();
+        players.forEach(p => playerNectarPoints.set(p.id, 0));
+
+        // Iterate through 3 biomes (0=Forest, 1=Grassland, 2=Wetland)
+        for (let b = 0; b < 3; b++) {
+            const rankGroups = { 1: [] as string[], 2: [] as string[] };
+
+            players.forEach(p => {
+                const rank = p.nectarPlacements[b];
+                if (rank === 1 || rank === 2) rankGroups[rank].push(p.id);
+            });
+
+            let currentSlot = 0;
+            // Rank 1
+            const count1 = rankGroups[1].length;
+            if (count1 > 0) {
+                let sum = 0;
+                for (let i = 0; i < count1; i++) {
+                    sum += (currentSlot < NECTAR_POINTS.length ? NECTAR_POINTS[currentSlot] : 0);
+                    currentSlot++;
+                }
+                const points = Math.floor(sum / count1);
+                rankGroups[1].forEach(pid => playerNectarPoints.set(pid, (playerNectarPoints.get(pid) || 0) + points));
+            }
+
+            // Rank 2
+            const count2 = rankGroups[2].length;
+            if (count2 > 0) {
+                let sum = 0;
+                for (let i = 0; i < count2; i++) {
+                    sum += (currentSlot < NECTAR_POINTS.length ? NECTAR_POINTS[currentSlot] : 0);
+                    currentSlot++;
+                }
+                const points = Math.floor(sum / count2);
+                rankGroups[2].forEach(pid => playerNectarPoints.set(pid, (playerNectarPoints.get(pid) || 0) + points));
+            }
+        }
+
+        return players.map(p => {
+            const nectarPoints = playerNectarPoints.get(p.id) || 0;
+            const newScores = { ...p.scores, nectar: nectarPoints };
+            const total = Object.values(newScores).reduce((acc, curr) => acc + curr, 0);
+            return { ...p, scores: newScores, total };
+        });
+    };
+
     return {
         subscribe,
         addPlayer: (name: string, color: string) => update(state => {
@@ -158,6 +209,7 @@ function createGameStore() {
                 name,
                 color,
                 roundPlacements: [0, 0, 0, 0], // 0 = None, 1 = 1st, 2 = 2nd, 3 = 3rd
+                nectarPlacements: [0, 0, 0], // Init 3 biomes
                 scores: {
                     round_goals: 0,
                     bonus: 0,
@@ -221,6 +273,28 @@ function createGameStore() {
             // Recalculate (will set all round_goals to 0)
             updatedPlayers = recalculateRoundScores(updatedPlayers);
 
+            return { ...state, players: updatedPlayers };
+        }),
+
+        updateNectarPlacement: (playerId: string, biomeIndex: number, rank: number) => update(state => {
+            let updatedPlayers = state.players.map(p => {
+                if (p.id === playerId) {
+                    const newPlacements = [...p.nectarPlacements];
+                    newPlacements[biomeIndex] = rank;
+                    return { ...p, nectarPlacements: newPlacements };
+                }
+                return p;
+            });
+            updatedPlayers = recalculateNectarScores(updatedPlayers);
+            return { ...state, players: updatedPlayers };
+        }),
+
+        resetAllNectarPlacements: () => update(state => {
+            let updatedPlayers = state.players.map(p => ({
+                ...p,
+                nectarPlacements: [0, 0, 0]
+            }));
+            updatedPlayers = recalculateNectarScores(updatedPlayers);
             return { ...state, players: updatedPlayers };
         }),
 

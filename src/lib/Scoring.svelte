@@ -7,6 +7,7 @@
     } from "./store";
     import { slide } from "svelte/transition";
     import RoundGoalGrid from "./RoundGoalGrid.svelte";
+    import NectarGoalGrid from "./NectarGoalGrid.svelte";
 
     let expandedPlayerId: string | null = null;
 
@@ -16,6 +17,8 @@
     $: label = CATEGORY_LABELS[currentCategory];
     $: isFirstCategory = currentCategoryIndex === 0;
     $: isLastCategory = currentCategoryIndex === CATEGORIES.length - 1;
+    $: isPlacementCategory =
+        currentCategory === "round_goals" || currentCategory === "nectar";
 
     function handleScoreChange(playerId: string, val: number) {
         // Ensure value is non-negative
@@ -31,7 +34,11 @@
         gameStore.prevCategory();
     }
     function handleReset() {
-        gameStore.resetAllRoundPlacements();
+        if (currentCategory === "round_goals") {
+            gameStore.resetAllRoundPlacements();
+        } else if (currentCategory === "nectar") {
+            gameStore.resetAllNectarPlacements();
+        }
     }
 </script>
 
@@ -51,8 +58,8 @@
     </div>
 
     <div class="players-inputs">
-        {#if currentCategory === "round_goals"}
-            <!-- Shared Round Goal UI -->
+        {#if isPlacementCategory}
+            <!-- Shared Goal Placment UI (Round Scors & Nectar) -->
             <div class="round-goals-wrapper" transition:slide|local>
                 <div class="player-selector">
                     <div class="selector-header">
@@ -94,7 +101,11 @@
                             Select a player above to start placing
                         {/if}
                     </p>
-                    <RoundGoalGrid activePlayerId={expandedPlayerId} />
+                    {#if currentCategory === "round_goals"}
+                        <RoundGoalGrid activePlayerId={expandedPlayerId} />
+                    {:else if currentCategory === "nectar"}
+                        <NectarGoalGrid activePlayerId={expandedPlayerId} />
+                    {/if}
                 </div>
             </div>
         {:else}
