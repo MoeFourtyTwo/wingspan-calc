@@ -1,10 +1,11 @@
 <script lang="ts">
     import { gameStore, type Player } from "./store";
+    import { t } from "./i18n";
 
     export let activePlayerId: string | null;
 
     const BIOMES = [0, 1, 2]; // 0=Forest, 1=Grassland, 2=Wetland
-    const BIOME_NAMES = ["Forest", "Grassland", "Wetland"];
+    // const BIOME_NAMES = ["Forest", "Grassland", "Wetland"]; // Replaced by translation
     const RANKS = [1, 2, 0]; // 1st, 2nd, None
 
     function togglePlacement(biomeIndex: number, rank: number) {
@@ -43,16 +44,18 @@
 
         return true;
     }
+
+    const biomeKeys = ["forest", "grassland", "wetland"] as const;
 </script>
 
 <div class="shared-grid-container">
     <div class="grid">
         <!-- Header Row -->
         <div class="row header-row">
-            <div class="cell-label corner">Biome</div>
-            <div class="cell-header rank-header rank-1">1st</div>
-            <div class="cell-header rank-header rank-2">2nd</div>
-            <div class="cell-header rank-header header-none">None</div>
+            <div class="cell-label corner">{$t("biome")}</div>
+            <div class="cell-header rank-header rank-1">{$t("rank1")}</div>
+            <div class="cell-header rank-header rank-2">{$t("rank2")}</div>
+            <div class="cell-header rank-header header-none">{$t("none")}</div>
         </div>
 
         {#each BIOMES as biomeIndex}
@@ -66,7 +69,7 @@
             >
                 <div class="row">
                     <div class="cell-label biome-label">
-                        {BIOME_NAMES[biomeIndex]}
+                        {$t(biomeKeys[biomeIndex])}
                     </div>
 
                     {#each RANKS as rank}

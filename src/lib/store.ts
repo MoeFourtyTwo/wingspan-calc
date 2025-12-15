@@ -22,15 +22,7 @@ export const CATEGORIES: Category[] = [
     'nectar'
 ];
 
-export const CATEGORY_LABELS: Record<Category, string> = {
-    round_goals: 'Round Goals',
-    bonus: 'Bonus Cards',
-    nectar: 'Nectar',
-    birds: 'Birds',
-    tucked: 'Tucked Cards',
-    eggs: 'Eggs',
-    food: 'Food on Material',
-};
+
 
 export interface Player {
     id: string;

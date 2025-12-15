@@ -1,10 +1,6 @@
 <script lang="ts">
-    import {
-        gameStore,
-        CATEGORIES,
-        CATEGORY_LABELS,
-        type Category,
-    } from "./store";
+    import { gameStore, CATEGORIES, type Category } from "./store";
+    import { t } from "./i18n";
     import { slide } from "svelte/transition";
     import RoundGoalGrid from "./RoundGoalGrid.svelte";
     import NectarGoalGrid from "./NectarGoalGrid.svelte";
@@ -14,7 +10,7 @@
     // Computed properties
     $: currentCategoryIndex = $gameStore.currentScoringCategoryIndex;
     $: currentCategory = CATEGORIES[currentCategoryIndex];
-    $: label = CATEGORY_LABELS[currentCategory];
+    $: label = $t(currentCategory);
     $: isFirstCategory = currentCategoryIndex === 0;
     $: isLastCategory = currentCategoryIndex === CATEGORIES.length - 1;
     $: isPlacementCategory =
@@ -45,7 +41,7 @@
 <div class="scoring-container">
     <div class="header">
         <button class="btn-secondary back-btn" on:click={handleBack}>
-            ← Back
+            ← {$t("back")}
         </button>
         <div class="progress-indicator">
             <span>{currentCategoryIndex + 1} / {CATEGORIES.length}</span>
@@ -64,12 +60,12 @@
                 <div class="player-selector">
                     <div class="selector-header">
                         <div class="selector-label">
-                            Select Player to Place:
+                            {$t("selectPlayerPlace")}
                         </div>
                         <button
                             class="reset-icon-btn"
                             on:click={handleReset}
-                            title="Reset Grid"
+                            title={$t("resetGrid")}
                         >
                             ↺
                         </button>
@@ -92,13 +88,14 @@
                 <div class="grid-section">
                     <p class="instruction">
                         {#if expandedPlayerId}
-                            Tap grid cells to place <strong
+                            {$t("tapGrid")}
+                            <strong
                                 >{$gameStore.players.find(
                                     (p) => p.id === expandedPlayerId,
                                 )?.name}</strong
                             >
                         {:else}
-                            Select a player above to start placing
+                            {$t("selectAbove")}
                         {/if}
                     </p>
                     {#if currentCategory === "round_goals"}
@@ -133,6 +130,7 @@
                             on:keydown={(e) => {
                                 if (["e", "E", "+", "-"].includes(e.key)) {
                                     e.preventDefault();
+                                    e.stopPropagation();
                                 }
                             }}
                             placeholder="0"
@@ -145,7 +143,7 @@
 
     <div class="actions">
         <button class="btn-primary next-btn" on:click={handleNext}>
-            {isLastCategory ? "Finish Scoring" : "Next Category →"}
+            {isLastCategory ? $t("finishScoring") : $t("next") + " →"}
         </button>
     </div>
 </div>

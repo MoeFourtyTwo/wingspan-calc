@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { gameStore } from "./store";
+    import { t } from "./i18n";
     import { scale } from "svelte/transition";
 
     let displayingPlayerIndex = 0;
@@ -66,7 +67,7 @@
 
 <div class="selection-container">
     <h2>
-        {isFinished ? "First Player Selected!" : "Selecting First Player..."}
+        {isFinished ? $t("firstSelected") : $t("selectingFirst")}
     </h2>
 
     <div class="animation-stage">
@@ -82,7 +83,7 @@
 
     {#if isFinished}
         <div class="message" in:scale>
-            It's <b>{targetPlayer?.name}</b>'s turn to start!
+            {$t("turnStartPre")}<b>{targetPlayer?.name}</b>{$t("turnStartPost")}
         </div>
 
         <button
@@ -90,7 +91,7 @@
             in:scale={{ delay: 200 }}
             on:click={goToScoring}
         >
-            Start Scoring →
+            {$t("startGame")} →
         </button>
     {/if}
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { gameStore, CATEGORIES, CATEGORY_LABELS } from "./store";
+    import { gameStore, CATEGORIES } from "./store";
+    import { t } from "./i18n";
     import { fade } from "svelte/transition";
 
     $: players = $gameStore.players.sort((a, b) => b.total - a.total);
@@ -16,7 +17,7 @@
     };
 
     function playAgain() {
-        if (confirm("Start a new game?")) {
+        if (confirm($t("confirmNewGame"))) {
             gameStore.resetGame();
         }
     }
@@ -29,9 +30,9 @@
 <div class="stats-container">
     <div class="header">
         <button class="btn-secondary back-btn" on:click={goBack}>
-            ← Back to Results
+            ← {$t("backToResults")}
         </button>
-        <h2>Game Stats</h2>
+        <h2>{$t("statsTitle")}</h2>
     </div>
 
     <!-- Score Breakdown Table -->
@@ -40,7 +41,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Category</th>
+                        <th>{$t("categoryTitle")}</th>
                         {#each players as player}
                             <th>
                                 <div class="th-content">
@@ -57,14 +58,14 @@
                 <tbody>
                     {#each CATEGORIES as cat}
                         <tr>
-                            <td class="cat-label">{CATEGORY_LABELS[cat]}</td>
+                            <td class="cat-label">{$t(cat)}</td>
                             {#each players as player}
                                 <td>{player.scores[cat]}</td>
                             {/each}
                         </tr>
                     {/each}
                     <tr class="total-row">
-                        <td>Total</td>
+                        <td>{$t("total")}</td>
                         {#each players as player}
                             <td>{player.total}</td>
                         {/each}
@@ -76,7 +77,7 @@
 
     <!-- Visualizer: Stacked Bar Chart -->
     <div class="card chart-card">
-        <h3>Score Composition</h3>
+        <h3>{$t("scoreDistribution")}</h3>
         <div class="chart-container">
             {#each players as player}
                 <div class="player-bar-row">
@@ -91,8 +92,7 @@
                                         100}%; background-color: {categoryColors[
                                         cat
                                     ]}"
-                                    title="{CATEGORY_LABELS[cat]}: {player
-                                        .scores[cat]}"
+                                    title="{$t(cat)}: {player.scores[cat]}"
                                 ></div>
                             {/if}
                         {/each}
@@ -109,7 +109,7 @@
                         class="legend-dot"
                         style="background-color: {categoryColors[cat]}"
                     ></span>
-                    <span>{CATEGORY_LABELS[cat]}</span>
+                    <span>{$t(cat)}</span>
                 </div>
             {/each}
         </div>
@@ -117,7 +117,7 @@
 
     <div class="actions">
         <button class="btn-secondary" on:click={playAgain} style="width: 100%;">
-            New Game
+            {$t("newGame")}
         </button>
     </div>
 </div>

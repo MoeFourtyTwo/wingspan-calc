@@ -1,5 +1,6 @@
 <script lang="ts">
     import { gameStore } from "./store";
+    import { t } from "./i18n";
     import { fade, slide } from "svelte/transition";
 
     let newName = "";
@@ -46,12 +47,12 @@
 
 <div class="setup-container">
     <div class="card add-player-card">
-        <h2>Add Player</h2>
+        <h2>{$t("addPlayer")}</h2>
 
         <div class="input-group">
             <input
                 type="text"
-                placeholder="Player Name"
+                placeholder={$t("playerName")}
                 bind:value={newName}
                 on:keydown={(e) => e.key === "Enter" && handleAddPlayer()}
             />
@@ -75,14 +76,14 @@
             on:click={handleAddPlayer}
             disabled={!newName.trim()}
         >
-            Add Player
+            {$t("addPlayer")}
         </button>
     </div>
 
     <div class="players-list">
-        <h3>Players ({$gameStore.players.length})</h3>
+        <h3>{$t("players")} ({$gameStore.players.length})</h3>
         {#if $gameStore.players.length === 0}
-            <p class="empty-state">No players added yet.</p>
+            <p class="empty-state">{$t("noPlayers")}</p>
         {:else}
             <ul>
                 {#each $gameStore.players as player (player.id)}
@@ -113,7 +114,7 @@
             disabled={$gameStore.players.length < 1}
             on:click={startGame}
         >
-            Start Game →
+            {$t("startGame")} →
         </button>
     </div>
 </div>

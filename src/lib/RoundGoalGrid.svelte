@@ -1,5 +1,6 @@
 <script lang="ts">
     import { gameStore, type Player } from "./store";
+    import { t } from "./i18n";
     import { slide } from "svelte/transition";
 
     export let activePlayerId: string | null;
@@ -74,11 +75,11 @@
     <div class="grid">
         <!-- Header Row -->
         <div class="row header-row">
-            <div class="cell-label corner">Round</div>
-            <div class="cell-header rank-header rank-1">1st</div>
-            <div class="cell-header rank-header rank-2">2nd</div>
-            <div class="cell-header rank-header rank-3">3rd</div>
-            <div class="cell-header rank-header header-none">None</div>
+            <div class="cell-label corner">{$t("round")}</div>
+            <div class="cell-header rank-header rank-1">{$t("rank1")}</div>
+            <div class="cell-header rank-header rank-2">{$t("rank2")}</div>
+            <div class="cell-header rank-header rank-3">{$t("rank3")}</div>
+            <div class="cell-header rank-header header-none">{$t("none")}</div>
         </div>
 
         {#each ROUNDS as roundIndex}

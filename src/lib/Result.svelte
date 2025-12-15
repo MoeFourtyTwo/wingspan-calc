@@ -1,5 +1,6 @@
 <script lang="ts">
     import { gameStore } from "./store";
+    import { t } from "./i18n";
     import { slide, scale } from "svelte/transition";
 
     // Sort players by total score descending
@@ -13,7 +14,7 @@
     }
 
     function playAgain() {
-        if (confirm("Start a new game?")) {
+        if (confirm($t("confirmNewGame"))) {
             gameStore.resetGame();
         }
     }
@@ -25,25 +26,25 @@
             class="btn-secondary back-btn"
             on:click={() => gameStore.backToScoring()}
         >
-            ← Adjust Scores
+            ← {$t("adjustScores")}
         </button>
     </div>
 
     <div class="winner-section" in:scale={{ duration: 500, start: 0.8 }}>
         <div class="laurel-wreath">🏆</div>
-        <h2>Winner</h2>
+        <h2>{$t("winner")}</h2>
         <div class="winner-card">
             <span
                 class="player-dot large"
                 style="background-color: {winner?.color}"
             ></span>
             <h1 class="winner-name">{winner?.name}</h1>
-            <div class="winner-score">{winner?.total} pts</div>
+            <div class="winner-score">{winner?.total} {$t("pts")}</div>
         </div>
     </div>
 
     <div class="leaderboard">
-        <h3>Leaderboard</h3>
+        <h3>{$t("leaderboard")}</h3>
         <ul>
             {#each sortedPlayers as player, i (player.id)}
                 <li class="leaderboard-item" transition:slide|local>
@@ -63,14 +64,14 @@
 
     <div class="actions">
         <button class="btn-primary" on:click={goToStats}>
-            View Detailed Stats →
+            {$t("viewStats")} →
         </button>
         <button
             class="btn-secondary"
             on:click={playAgain}
             style="margin-top: 10px; width: 100%;"
         >
-            New Game
+            {$t("newGame")}
         </button>
     </div>
 </div>
