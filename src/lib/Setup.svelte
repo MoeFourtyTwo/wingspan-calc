@@ -2,6 +2,7 @@
     import { gameStore } from "./store";
     import { t } from "./i18n";
     import { fade, slide } from "svelte/transition";
+    import { onMount } from "svelte";
 
     let newName = "";
     // Default to first color
@@ -16,6 +17,75 @@
         "#E8E6E1", // Off-White
         "#4A4E69", // Muted Black
     ];
+
+    interface RecentPlayer {
+        name: string;
+        color: string;
+    }
+
+    let recentPlayers: RecentPlayer[] = [];
+
+    onMount(() => {
+        loadRecentPlayers();
+    });
+
+    function loadRecentPlayers() {
+        try {
+            const stored = localStorage.getItem("wingspan_recent_players");
+            if (stored) {
+                recentPlayers = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error("Failed to load recent players", e);
+        }
+    }
+
+    function saveRecentPlayers() {
+        if ($gameStore.players.length === 0) return;
+
+        // Combine current players with existing recent players
+        const currentPlayers = $gameStore.players.map((p) => ({
+            name: p.name,
+            color: p.color,
+        }));
+
+        const allPlayers = [...currentPlayers, ...recentPlayers];
+
+        // Deduplicate by name, keeping the most recent (first in array)
+        const unique = new Map<string, RecentPlayer>();
+        allPlayers.forEach((p) => {
+            if (!unique.has(p.name)) {
+                unique.set(p.name, p);
+            }
+        });
+
+        // Convert back to array and limit to 10
+        const savedList = Array.from(unique.values()).slice(0, 10);
+
+        try {
+            localStorage.setItem(
+                "wingspan_recent_players",
+                JSON.stringify(savedList),
+            );
+        } catch (e) {
+            console.error("Failed to save recent players", e);
+        }
+    }
+
+    function clearHistory() {
+        localStorage.removeItem("wingspan_recent_players");
+        recentPlayers = [];
+    }
+
+    function addRecentPlayer(p: RecentPlayer) {
+        // Check if player already exists in current game
+        if ($gameStore.players.some((existing) => existing.name === p.name))
+            return;
+
+        gameStore.addPlayer(p.name, p.color);
+        // Remove from the local recent list to give feedback (will be re-added on save)
+        recentPlayers = recentPlayers.filter((rp) => rp.name !== p.name);
+    }
 
     function handleAddPlayer() {
         if (!newName.trim()) return;
@@ -32,6 +102,8 @@
 
     function startGame() {
         if ($gameStore.players.length === 0) return;
+
+        saveRecentPlayers();
 
         // Randomize start player
         const randomIndex = Math.floor(
@@ -56,6 +128,35 @@
                 on:keydown={(e) => e.key === "Enter" && handleAddPlayer()}
             />
         </div>
+
+        <!-- Recent Players Chips -->
+        {#if recentPlayers.length > 0}
+            <div class="recent-players-section" transition:slide|local>
+                <div class="recent-header">
+                    <span class="label">{$t("recentPlayers")}</span>
+                    <button class="text-btn" on:click={clearHistory}
+                        >{$t("clearHistory")}</button
+                    >
+                </div>
+                <div class="chips">
+                    {#each recentPlayers as p}
+                        <button
+                            class="chip"
+                            on:click={() => addRecentPlayer(p)}
+                            disabled={$gameStore.players.some(
+                                (gp) => gp.name === p.name,
+                            )}
+                        >
+                            <span
+                                class="chip-dot"
+                                style="background-color: {p.color}"
+                            ></span>
+                            {p.name}
+                        </button>
+                    {/each}
+                </div>
+            </div>
+        {/if}
 
         <div class="color-picker">
             {#each colors as color}
@@ -233,6 +334,76 @@
         color: var(--color-danger);
         background: rgba(0, 0, 0, 0.05);
         border-radius: 4px;
+    }
+
+    /* Recent Players Styles */
+    .recent-players-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+    }
+
+    .text-btn {
+        background: none;
+        border: none;
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        padding: 0;
+        text-decoration: underline;
+    }
+
+    .text-btn:hover {
+        color: var(--color-danger);
+    }
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: var(--color-text-primary);
+    }
+
+    .chip:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .chip:disabled {
+        opacity: 0.5;
+        cursor: default;
+        text-decoration: line-through;
+    }
+
+    .chip-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .start-btn {

@@ -63,7 +63,9 @@ const translations = {
         scoreDistribution: "Score Distribution",
         avgScore: "Average Score",
         maxScore: "Max Score",
-        minScore: "Min Score"
+        minScore: "Min Score",
+        recentPlayers: "Recent Players",
+        clearHistory: "Clear History"
     },
     de: {
         appTitle: "Flügelschlag Rechner",
@@ -123,7 +125,9 @@ const translations = {
         scoreDistribution: "Punkteverteilung",
         avgScore: "Durchschnitt",
         maxScore: "Max",
-        minScore: "Min"
+        minScore: "Min",
+        recentPlayers: "Letzte Spieler",
+        clearHistory: "Verlauf löschen"
     }
 };
 
