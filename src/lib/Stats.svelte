@@ -195,6 +195,7 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     /* Chart Styles */

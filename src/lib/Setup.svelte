@@ -8,14 +8,13 @@
     let selectedColor = "#a3c4dc";
 
     const colors = [
-        "#a3c4dc", // Blue
-        "#9fb98b", // Green
-        "#e6b8b8", // Pink
-        "#d4a373", // Brown
-        "#e9c46a", // Gold
-        "#264653", // Dark Cyan
-        "#2a9d8f", // Teal
-        "#f4a261", // Sandy Brown
+        "#8FB8DE", // Muted Blue
+        "#E5989B", // Muted Red
+        "#F2D096", // Muted Yellow
+        "#B589D6", // Muted Purple
+        "#99C2A2", // Muted Green
+        "#E8E6E1", // Off-White
+        "#4A4E69", // Muted Black
     ];
 
     function handleAddPlayer() {
@@ -160,7 +159,7 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        border: 2px solid transparent;
+        border: 1px solid rgba(0, 0, 0, 0.1);
         transition:
             transform 0.2s,
             border-color 0.2s;
@@ -216,6 +215,7 @@
         width: 12px;
         height: 12px;
         border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .player-name {

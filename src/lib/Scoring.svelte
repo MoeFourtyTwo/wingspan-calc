@@ -218,6 +218,7 @@
         width: 16px;
         height: 16px;
         border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .player-name {
