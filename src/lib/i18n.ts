@@ -65,7 +65,14 @@ const translations = {
         maxScore: "Max Score",
         minScore: "Min Score",
         recentPlayers: "Recent Players",
-        clearHistory: "Clear History"
+        clearHistory: "Clear History",
+        // History
+        history: "History",
+        noHistory: "No games played yet.",
+        date: "Date",
+        delete: "Delete",
+        compareGroup: "Compare Group",
+        groupStats: "Group Stats vs Previous Games"
     },
     de: {
         appTitle: "Flügelschlag Rechner",
@@ -127,7 +134,14 @@ const translations = {
         maxScore: "Max",
         minScore: "Min",
         recentPlayers: "Letzte Spieler",
-        clearHistory: "Verlauf löschen"
+        clearHistory: "Verlauf löschen",
+        // History
+        history: "Verlauf",
+        noHistory: "Noch keine Spiele.",
+        date: "Datum",
+        delete: "Löschen",
+        compareGroup: "Gruppe vergleichen",
+        groupStats: "Gruppenstatistik vs Vorherige"
     }
 };
 

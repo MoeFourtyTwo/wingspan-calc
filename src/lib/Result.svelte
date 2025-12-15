@@ -1,7 +1,9 @@
 <script lang="ts">
     import { gameStore } from "./store";
+    import { historyStore } from "./historyStore";
     import { t } from "./i18n";
-    import { slide, scale } from "svelte/transition";
+    import { fade, slide, scale } from "svelte/transition";
+    import { onMount } from "svelte";
 
     // Sort players by total score descending
     $: sortedPlayers = [...$gameStore.players].sort(
@@ -9,7 +11,36 @@
     );
     $: winner = sortedPlayers[0];
 
+    onMount(() => {
+        saveGame();
+    });
+
+    function saveGame() {
+        const timestamp = new Date().toISOString();
+        const playersToSave = $gameStore.players.map((p) => ({
+            name: p.name,
+            total: p.total,
+            scores: p.scores,
+            winner: p.id === winner.id,
+            color: p.color,
+        }));
+
+        historyStore.saveGame({
+            id: $gameStore.gameId,
+            date: timestamp,
+            startPlayerName:
+                $gameStore.players.find(
+                    (p) => p.id === $gameStore.startPlayerId,
+                )?.name || "Unknown",
+            players: playersToSave,
+        });
+    }
+
     function goToStats() {
+        gameStore.setPhase("STATS");
+    }
+
+    function confirmNewGame() {
         gameStore.setPhase("STATS");
     }
 

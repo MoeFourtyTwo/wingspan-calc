@@ -28,6 +28,7 @@ export interface Player {
 }
 
 export interface GameState {
+    gameId: string;
     players: Player[];
     currentPhase: Phase;
     currentScoringCategoryIndex: number; // For iterating through categories in SCORING phase
@@ -35,6 +36,7 @@ export interface GameState {
 }
 
 const initialState: GameState = {
+    gameId: crypto.randomUUID(),
     players: [],
     currentPhase: 'SETUP',
     currentScoringCategoryIndex: 0,
@@ -302,7 +304,10 @@ function createGameStore() {
             currentPhase: 'SCORING',
             currentScoringCategoryIndex: CATEGORIES.length - 1
         })),
-        resetGame: () => set(initialState)
+        resetGame: () => set({
+            ...initialState,
+            gameId: crypto.randomUUID()
+        })
     };
 }
 

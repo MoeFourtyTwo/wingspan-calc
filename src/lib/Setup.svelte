@@ -117,6 +117,16 @@
 </script>
 
 <div class="setup-container">
+    <div class="setup-header">
+        <button
+            class="icon-btn history-btn"
+            on:click={() => gameStore.setPhase("STATS")}
+            aria-label={$t("history")}
+        >
+            🕒
+        </button>
+    </div>
+
     <div class="card add-player-card">
         <h2>{$t("addPlayer")}</h2>
 
@@ -346,6 +356,45 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 8px;
+    }
+
+    .start-btn {
+        background: var(--color-text-primary);
+        color: white;
+        width: 100%;
+        padding: 16px;
+        font-size: 1.2rem;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: transform 0.1s;
+    }
+
+    .start-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .setup-header {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+
+    .history-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+        /* Simple clock icon using emoji or unicode, or text */
+    }
+
+    .history-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
     }
 
     .label {
