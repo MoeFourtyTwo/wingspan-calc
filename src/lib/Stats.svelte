@@ -69,16 +69,19 @@
     $: maxScore = Math.max(...players.map((p) => p.total), 1);
 
     // Reactive Chart Updates
-    $: if (groupStats && historyCanvas) {
-        renderHistoryChart();
+    $: {
+        $t;
+        if (groupStats && historyCanvas) renderHistoryChart();
     }
 
-    $: if (groupStats && winnersCanvas) {
-        renderWinnersChart();
+    $: {
+        $t;
+        if (groupStats && winnersCanvas) renderWinnersChart();
     }
 
-    $: if (displayedGame && distributionCanvas) {
-        renderDistributionChart();
+    $: {
+        $t;
+        if (displayedGame && distributionCanvas) renderDistributionChart();
     }
 
     // Helpers
@@ -351,8 +354,8 @@
                 {selectedGameId
                     ? formatDate(displayedGame.date)
                     : $gameStore.players.length > 0
-                      ? "Current Game"
-                      : "Select Game"}
+                      ? $t("currentGame")
+                      : $t("selectGame")}
                 <span class="chevron">▼</span>
             </button>
 
@@ -364,7 +367,7 @@
                                 class:active={!selectedGameId}
                                 on:click={() => selectGame(null)}
                             >
-                                Current Game
+                                {$t("currentGame")}
                             </button>
                         {/if}
                         {#each $historyStore as game}
@@ -409,14 +412,24 @@
                 <!-- Summary Stats -->
                 <div class="stats-grid">
                     <div class="stat-col header-col">
-                        <span>Rate</span>
-                        <span>Wins</span>
-                        <span>Avg</span>
-                        <span>High</span>
+                        <span>&nbsp;</span>
+                        <span>{$t("statRate")}</span>
+                        <span>{$t("statWins")}</span>
+                        <span>{$t("statAvg")}</span>
+                        <span>{$t("statHigh")}</span>
                     </div>
                     {#each comparisonGroup as name}
+                        {@const winRate =
+                            groupStats.games > 0
+                                ? Math.round(
+                                      (groupStats.wins[name] /
+                                          groupStats.games) *
+                                          100,
+                                  )
+                                : 0}
                         <div class="stat-col">
                             <strong>{name}</strong>
+                            <span>{winRate}%</span>
                             <span>{groupStats.wins[name] || 0}</span>
                             <span>{groupStats.avgScore[name] || 0}</span>
                             <span>{groupStats.highScore[name] || 0}</span>
@@ -427,14 +440,14 @@
                 <!-- Charts -->
                 <div class="charts-row">
                     <div class="graph-container history-graph">
-                        <h4>History Trend</h4>
+                        <h4>{$t("historyTrend")}</h4>
                         <div class="canvas-wrapper">
                             <canvas bind:this={historyCanvas}></canvas>
                         </div>
                     </div>
 
                     <div class="graph-container winners-graph">
-                        <h4>Total Wins</h4>
+                        <h4>{$t("totalWins")}</h4>
                         <div class="canvas-wrapper">
                             <canvas bind:this={winnersCanvas}></canvas>
                         </div>
@@ -443,7 +456,7 @@
 
                 <!-- Accumulated Stats Section -->
                 <div class="accumulated-section">
-                    <h3>Accumulated Points</h3>
+                    <h3>{$t("accumulatedPoints")}</h3>
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -472,7 +485,7 @@
                                     </tr>
                                 {/each}
                                 <tr class="total-row">
-                                    <td>Total Accumulated</td>
+                                    <td>{$t("totalAccumulated")}</td>
                                     {#each comparisonGroup as name}
                                         {@const val =
                                             groupStats.accumulated[name].total}
@@ -495,7 +508,7 @@
     {#if displayedGame && displayedGame.players.length > 0}
         <div class="card table-card">
             <div class="card-header-row">
-                <h3>Score Breakdown</h3>
+                <h3>{$t("scoreBreakdown")}</h3>
                 {#if selectedGameId && !comparisonGroup}
                     <button class="text-btn" on:click={openComparison}
                         >{$t("compareGroup")}</button

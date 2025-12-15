@@ -72,7 +72,18 @@ const translations = {
         date: "Date",
         delete: "Delete",
         compareGroup: "Compare Group",
-        groupStats: "Group Stats vs Previous Games"
+        groupStats: "Group Stats vs Previous Games",
+        currentGame: "Current Game",
+        selectGame: "Select Game",
+        scoreBreakdown: "Score Breakdown",
+        historyTrend: "History Trend",
+        totalWins: "Total Wins",
+        accumulatedPoints: "Accumulated Points",
+        totalAccumulated: "Total Accumulated",
+        statRate: "Rate",
+        statWins: "Wins",
+        statAvg: "Avg",
+        statHigh: "High"
     },
     de: {
         appTitle: "Flügelschlag Rechner",
@@ -141,7 +152,18 @@ const translations = {
         date: "Datum",
         delete: "Löschen",
         compareGroup: "Gruppe vergleichen",
-        groupStats: "Gruppenstatistik vs Vorherige"
+        groupStats: "Gruppenstatistik vs Vorherige",
+        currentGame: "Aktuelles Spiel",
+        selectGame: "Spiel wählen",
+        scoreBreakdown: "Punkteübersicht",
+        historyTrend: "Verlaufstrend",
+        totalWins: "Siege gesamt",
+        accumulatedPoints: "Akkumulierte Punkte",
+        totalAccumulated: "Gesamt akkumuliert",
+        statRate: "Rate",
+        statWins: "Siege",
+        statAvg: "Ø",
+        statHigh: "Max"
     }
 };
 
