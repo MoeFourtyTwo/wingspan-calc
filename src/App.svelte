@@ -24,7 +24,7 @@
     {:else if phase === "SELECTION"}
       <StartPlayerSelection />
     {:else if phase === "SCORING"}
-      <div in:slide>
+      <div in:fade>
         <Scoring />
       </div>
     {:else if phase === "RESULT"}
