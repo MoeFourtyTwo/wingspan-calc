@@ -341,9 +341,7 @@
 <div class="stats-container">
     <!-- Header with Game Selector -->
     <div class="header">
-        <button class="btn-secondary back-btn" on:click={goHome}>
-            🏠 Index
-        </button>
+        <button class="btn-secondary back-btn" on:click={goHome}> 🏠 </button>
 
         <div class="selector-container">
             <button

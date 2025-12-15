@@ -18,7 +18,7 @@
     <div class="header-top">
       <LanguageToggle />
     </div>
-    <h1>🪶 {$t("appTitle")}</h1>
+    <h1>🪶 {$t("appTitle")} 🪶</h1>
   </div>
 
   <div class="content">
