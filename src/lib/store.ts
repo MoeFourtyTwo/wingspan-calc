@@ -3,16 +3,7 @@ import { writable, type Writable } from 'svelte/store';
 
 export type Phase = 'SETUP' | 'SELECTION' | 'SCORING' | 'RESULT' | 'STATS';
 
-export type Category =
-    | 'round_goals'
-    | 'bonus'
-    | 'nectar'
-    | 'birds'
-    | 'tucked'
-    | 'eggs'
-    | 'food';
-
-export const CATEGORIES: Category[] = [
+export const CATEGORIES = [
     'round_goals',
     'bonus',
     'birds',
@@ -20,7 +11,9 @@ export const CATEGORIES: Category[] = [
     'food',
     'tucked',
     'nectar'
-];
+] as const;
+
+export type Category = typeof CATEGORIES[number];
 
 
 
