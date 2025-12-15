@@ -4,9 +4,9 @@ import { writable, type Writable } from 'svelte/store';
 export type Phase = 'SETUP' | 'SELECTION' | 'SCORING' | 'RESULT' | 'STATS';
 
 export const CATEGORIES = [
-    'round_goals',
-    'bonus',
     'birds',
+    'bonus',
+    'round_goals',
     'eggs',
     'food',
     'tucked',
