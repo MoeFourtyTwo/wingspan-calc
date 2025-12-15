@@ -37,7 +37,7 @@ const translations = {
         rank1: "1st",
         rank2: "2nd",
         rank3: "3rd",
-        none: "None",
+        none: "Other",
         // Result
         winner: "Winner",
         leaderboard: "Leaderboard",
@@ -97,7 +97,7 @@ const translations = {
         rank1: "1.",
         rank2: "2.",
         rank3: "3.",
-        none: "Keiner",
+        none: "Rest",
         // Result
         winner: "Gewinner",
         leaderboard: "Rangliste",

@@ -1,22 +1,16 @@
 <script lang="ts">
     import { language } from "./i18n";
+
+    function toggle() {
+        language.update((l) => (l === "en" ? "de" : "en"));
+    }
 </script>
 
-<div class="language-toggle">
-    <button
-        class:active={$language === "en"}
-        on:click={() => language.set("en")}
-    >
-        EN
-    </button>
+<button class="language-toggle" on:click={toggle}>
+    <span class="option" class:active={$language === "en"}>EN</span>
     <span class="separator">/</span>
-    <button
-        class:active={$language === "de"}
-        on:click={() => language.set("de")}
-    >
-        DE
-    </button>
-</div>
+    <span class="option" class:active={$language === "de"}>DE</span>
+</button>
 
 <style>
     .language-toggle {
@@ -28,25 +22,27 @@
         border-radius: 12px;
         font-size: 0.85rem;
         font-weight: 600;
-    }
-
-    button {
-        background: none;
         border: none;
-        padding: 2px 4px;
         cursor: pointer;
         color: var(--color-text-secondary);
+        font-family: inherit;
+        transition: background-color 0.2s;
+    }
+
+    .language-toggle:hover {
+        background: rgba(0, 0, 0, 0.08);
+        color: var(--color-text-primary);
+    }
+
+    .option {
+        padding: 2px 6px;
         border-radius: 4px;
         transition:
             color 0.2s,
             background-color 0.2s;
     }
 
-    button:hover {
-        color: var(--color-text-primary);
-    }
-
-    button.active {
+    .option.active {
         color: var(--color-primary-blue);
         background: white;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
