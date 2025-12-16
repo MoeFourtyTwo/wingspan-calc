@@ -2,10 +2,17 @@
     import { gameStore, CATEGORIES, type Category } from "./store";
     import { t } from "./i18n";
     import { slide } from "svelte/transition";
+    import { tick } from "svelte";
     import RoundGoalGrid from "./RoundGoalGrid.svelte";
     import NectarGoalGrid from "./NectarGoalGrid.svelte";
 
     let expandedPlayerId: string | null = null;
+
+    // Track input elements for focus navigation
+    let inputElements: { [playerId: string]: HTMLInputElement } = {};
+
+    // Track previous category to detect actual changes
+    let previousCategoryIndex = -1;
 
     // Computed properties
     $: currentCategoryIndex = $gameStore.currentScoringCategoryIndex;
@@ -15,6 +22,20 @@
     $: isLastCategory = currentCategoryIndex === CATEGORIES.length - 1;
     $: isPlacementCategory =
         currentCategory === "round_goals" || currentCategory === "nectar";
+
+    // Auto-focus first input when category actually changes (only for numeric input categories)
+    $: if (currentCategoryIndex !== previousCategoryIndex) {
+        previousCategoryIndex = currentCategoryIndex;
+        if (!isPlacementCategory) {
+            tick().then(() => {
+                const firstPlayerId = $gameStore.players[0]?.id;
+                if (firstPlayerId && inputElements[firstPlayerId]) {
+                    inputElements[firstPlayerId].focus();
+                    inputElements[firstPlayerId].select();
+                }
+            });
+        }
+    }
 
     function handleScoreChange(playerId: string, val: number) {
         // Ensure value is non-negative
@@ -29,6 +50,23 @@
     function handleBack() {
         gameStore.prevCategory();
     }
+
+    function focusNextInput(currentPlayerId: string) {
+        const playerIds = $gameStore.players.map((p) => p.id);
+        const currentIndex = playerIds.indexOf(currentPlayerId);
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex < playerIds.length) {
+            // Focus next player's input
+            const nextPlayerId = playerIds[nextIndex];
+            inputElements[nextPlayerId]?.focus();
+            inputElements[nextPlayerId]?.select();
+        } else {
+            // Last player - trigger next category
+            handleNext();
+        }
+    }
+
     function handleReset() {
         if (currentCategory === "round_goals") {
             gameStore.resetAllRoundPlacements();
@@ -119,7 +157,10 @@
 
                     <div class="input-wrapper">
                         <input
+                            bind:this={inputElements[player.id]}
                             type="number"
+                            inputmode="numeric"
+                            enterkeyhint="next"
                             min="0"
                             value={player.scores[currentCategory]}
                             on:input={(e) =>
@@ -132,7 +173,12 @@
                                     e.preventDefault();
                                     e.stopPropagation();
                                 }
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    focusNextInput(player.id);
+                                }
                             }}
+                            on:focus={(e) => e.currentTarget.select()}
                             placeholder="0"
                         />
                     </div>
