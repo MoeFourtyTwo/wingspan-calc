@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { gameStore, type Player } from "./store";
+    import { gameStore, type Player, validateRoundGoalsRow } from "./store";
     import { t } from "./i18n";
     import { slide } from "svelte/transition";
 
@@ -22,53 +22,6 @@
     ) {
         return players.filter((p) => p.roundPlacements[roundIndex] === rank);
     }
-
-    function getRowValidation(players: Player[], roundIndex: number): boolean {
-        const c1 = players.filter(
-            (p) => p.roundPlacements[roundIndex] === 1,
-        ).length;
-        const c2 = players.filter(
-            (p) => p.roundPlacements[roundIndex] === 2,
-        ).length;
-        const c3 = players.filter(
-            (p) => p.roundPlacements[roundIndex] === 3,
-        ).length;
-        const totalPlaced = c1 + c2 + c3;
-
-        // Rule 0: If nobody is placed, it's valid (all None)
-        if (totalPlaced === 0) return true;
-
-        // Rule 1: Must have at least one 1st place
-        if (c1 === 0) return false;
-
-        // Logic for "Next Available Rank"
-        // If 1 person in 1st => 2nd place is available.
-        // If 2 people in 1st => 2nd place is skipped (so c2 must be 0), 3rd is available.
-        // If 3+ people in 1st => 2nd and 3rd skipped (c2=0, c3=0).
-
-        if (c1 === 1) {
-            // 2nd place is available.
-            // If we have a 3rd place, we MUST have a 2nd place (No Gaps).
-            if (c3 > 0 && c2 === 0) return false; // Gap check
-
-            // If we have 2nd place filled:
-            if (c2 > 0) {
-                // 1 in 1st + N in 2nd.
-                // If 1 in 1st + 1 in 2nd => 3rd place available.
-                // If 1 in 1st + 2 in 2nd => 3rd place skipped (c3 must be 0).
-                if (c2 >= 2 && c3 > 0) return false; // Podium full check
-            }
-        } else if (c1 === 2) {
-            // Tie for 1st. 2nd place skipped.
-            if (c2 > 0) return false; // Invalid: 2nd place should be empty
-            // 3rd place is available.
-        } else if (c1 >= 3) {
-            // Full podium in 1st.
-            if (c2 > 0 || c3 > 0) return false;
-        }
-
-        return true;
-    }
 </script>
 
 <div class="shared-grid-container">
@@ -83,7 +36,10 @@
         </div>
 
         {#each ROUNDS as roundIndex}
-            {@const isValid = getRowValidation($gameStore.players, roundIndex)}
+            {@const isValid = validateRoundGoalsRow(
+                $gameStore.players,
+                roundIndex,
+            )}
             <div class="row-wrapper" class:has-error={!isValid}>
                 <div class="row">
                     <div class="cell-label round-label">

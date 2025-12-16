@@ -1,5 +1,12 @@
 <script lang="ts">
-    import { gameStore, CATEGORIES, type Category } from "./store";
+    import {
+        gameStore,
+        CATEGORIES,
+        type Category,
+        type Player,
+        validateAllRoundGoals,
+        validateAllNectar,
+    } from "./store";
     import { t } from "./i18n";
     import { slide } from "svelte/transition";
     import { tick } from "svelte";
@@ -42,6 +49,16 @@
         const safeVal = Math.max(0, val);
         gameStore.updateScore(playerId, currentCategory, safeVal);
     }
+
+    // Reactive validation check for current category
+    $: isCurrentCategoryValid = (() => {
+        if (currentCategory === "round_goals") {
+            return validateAllRoundGoals($gameStore.players);
+        } else if (currentCategory === "nectar") {
+            return validateAllNectar($gameStore.players);
+        }
+        return true; // Other categories don't have placement validation
+    })();
 
     function handleNext() {
         gameStore.nextCategory();
@@ -188,7 +205,11 @@
     </div>
 
     <div class="actions">
-        <button class="btn-primary next-btn" on:click={handleNext}>
+        <button
+            class="btn-primary next-btn"
+            on:click={handleNext}
+            disabled={!isCurrentCategoryValid}
+        >
             {isLastCategory ? $t("finishScoring") : $t("next") + " →"}
         </button>
     </div>

@@ -15,6 +15,52 @@ export const CATEGORIES = [
 
 export type Category = typeof CATEGORIES[number];
 
+// Validation utility functions for placement grids
+export function validateRoundGoalsRow(players: Player[], roundIndex: number): boolean {
+    const c1 = players.filter(p => p.roundPlacements[roundIndex] === 1).length;
+    const c2 = players.filter(p => p.roundPlacements[roundIndex] === 2).length;
+    const c3 = players.filter(p => p.roundPlacements[roundIndex] === 3).length;
+    const totalPlaced = c1 + c2 + c3;
+
+    if (totalPlaced === 0) return true;
+    if (c1 === 0) return false;
+
+    if (c1 === 1) {
+        if (c3 > 0 && c2 === 0) return false;
+        if (c2 >= 2 && c3 > 0) return false;
+    } else if (c1 === 2) {
+        if (c2 > 0) return false;
+    } else if (c1 >= 3) {
+        if (c2 > 0 || c3 > 0) return false;
+    }
+    return true;
+}
+
+export function validateAllRoundGoals(players: Player[]): boolean {
+    for (let r = 0; r < 4; r++) {
+        if (!validateRoundGoalsRow(players, r)) return false;
+    }
+    return true;
+}
+
+export function validateNectarRow(players: Player[], biomeIndex: number): boolean {
+    const c1 = players.filter(p => p.nectarPlacements[biomeIndex] === 1).length;
+    const c2 = players.filter(p => p.nectarPlacements[biomeIndex] === 2).length;
+    const totalPlaced = c1 + c2;
+
+    if (totalPlaced === 0) return true;
+    if (c1 === 0) return false;
+    if (c1 >= 2 && c2 > 0) return false;
+    return true;
+}
+
+export function validateAllNectar(players: Player[]): boolean {
+    for (let b = 0; b < 3; b++) {
+        if (!validateNectarRow(players, b)) return false;
+    }
+    return true;
+}
+
 
 
 export interface Player {

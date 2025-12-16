@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { gameStore, type Player } from "./store";
+    import { gameStore, type Player, validateNectarRow } from "./store";
     import { t } from "./i18n";
 
     export let activePlayerId: string | null;
@@ -22,29 +22,6 @@
         return players.filter((p) => p.nectarPlacements[biomeIndex] === rank);
     }
 
-    function getRowValidation(players: Player[], biomeIndex: number): boolean {
-        const c1 = players.filter(
-            (p) => p.nectarPlacements[biomeIndex] === 1,
-        ).length;
-        const c2 = players.filter(
-            (p) => p.nectarPlacements[biomeIndex] === 2,
-        ).length;
-        const totalPlaced = c1 + c2;
-
-        // Rule 0: If nobody is placed, it's valid (all None)
-        if (totalPlaced === 0) return true;
-
-        // Rule 1: Must have at least one 1st place if anyone is placed
-        if (c1 === 0) return false;
-
-        // Rule 2: Tie for 1st blocks 2nd place
-        // If 1 person in 1st -> 2nd available.
-        // If 2+ people in 1st -> 2nd blocked (c2 must be 0).
-        if (c1 >= 2 && c2 > 0) return false;
-
-        return true;
-    }
-
     const biomeKeys = ["forest", "grassland", "wetland"] as const;
 </script>
 
@@ -59,7 +36,7 @@
         </div>
 
         {#each BIOMES as biomeIndex}
-            {@const isValid = getRowValidation($gameStore.players, biomeIndex)}
+            {@const isValid = validateNectarRow($gameStore.players, biomeIndex)}
             <div
                 class="row-wrapper"
                 class:has-error={!isValid}

@@ -1,30 +1,37 @@
-
 :root {
   /* Wingspan Inspired Palette */
-  --color-bg-mesh: #f4f1ea; /* Paper/Board feel */
+  --color-bg-mesh: #f4f1ea;
+  /* Paper/Board feel */
   --color-text-primary: #2c3e50;
   --color-text-secondary: #5d6d7e;
-  
-  --color-primary-blue: #a3c4dc; /* Eggs/Water */
-  --color-primary-green: #9fb98b; /* Food/Forest */
-  --color-primary-pink: #e6b8b8; /* Tucked/Grassland */
-  --color-primary-brown: #d4a373; /* Wood/Nest */
-  
-  --color-accent-gold: #e9c46a; /* Nectar/Victory */
+
+  --color-primary-blue: #a3c4dc;
+  /* Eggs/Water */
+  --color-primary-green: #9fb98b;
+  /* Food/Forest */
+  --color-primary-pink: #e6b8b8;
+  /* Tucked/Grassland */
+  --color-primary-brown: #d4a373;
+  /* Wood/Nest */
+
+  --color-accent-gold: #e9c46a;
+  /* Nectar/Victory */
   --color-danger: #e76f51;
-  
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-  
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 24px;
-  
+
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -43,7 +50,8 @@ body {
 
 #app {
   width: 100%;
-  max-width: 600px; /* Mobile first, but constrained on desktop */
+  max-width: 600px;
+  /* Mobile first, but constrained on desktop */
   margin: 0 auto;
   padding: 20px;
   flex: 1;
@@ -74,8 +82,17 @@ input {
   font-size: 1.1rem;
 }
 
-.btn-primary:active {
+.btn-primary:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  background: #c0c0c0;
+  color: #888;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+  opacity: 0.7;
 }
 
 .btn-secondary {
@@ -94,7 +111,9 @@ input {
   margin-bottom: 16px;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   color: var(--color-text-primary);
   font-weight: 700;
 }
@@ -104,6 +123,13 @@ h1, h2, h3 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
