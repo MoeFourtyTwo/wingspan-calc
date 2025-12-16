@@ -107,7 +107,7 @@
     }
 
     function goHome() {
-        gameStore.setPhase("SETUP");
+        gameStore.resetGame();
     }
 
     // Comparison Logic
