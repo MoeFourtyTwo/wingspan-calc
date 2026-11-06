@@ -1,54 +1,66 @@
 <script lang="ts">
-    import { language } from "./i18n";
+    import { language, setLanguage, t } from "./i18n";
 
     function toggle() {
-        language.update((l) => (l === "en" ? "de" : "en"));
+        setLanguage($language === "en" ? "de" : "en");
     }
 </script>
 
-<button class="language-toggle" on:click={toggle}>
+<button
+    class="language-toggle"
+    class:de={$language === "de"}
+    on:click={toggle}
+    aria-label="{$t('switchLanguage')} (EN / DE)"
+>
+    <span class="thumb" aria-hidden="true"></span>
     <span class="option" class:active={$language === "en"}>EN</span>
-    <span class="separator">/</span>
     <span class="option" class:active={$language === "de"}>DE</span>
 </button>
 
 <style>
     .language-toggle {
-        display: flex;
+        position: relative;
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
         align-items: center;
-        gap: 4px;
-        background: rgba(0, 0, 0, 0.05);
-        padding: 4px 8px;
-        border-radius: 12px;
+        min-height: 36px;
+        padding: 3px;
+        border-radius: 999px;
+        background: rgba(110, 80, 50, 0.1);
+        border: 1.5px solid var(--line);
+        font-family: var(--font-display);
         font-size: 0.85rem;
         font-weight: 600;
-        border: none;
-        cursor: pointer;
-        color: var(--color-text-secondary);
-        font-family: inherit;
-        transition: background-color 0.2s;
+        color: var(--ink-soft);
     }
 
-    .language-toggle:hover {
-        background: rgba(0, 0, 0, 0.08);
-        color: var(--color-text-primary);
+    .language-toggle:active {
+        transform: scale(0.94);
+    }
+
+    .thumb {
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        left: 3px;
+        width: calc(50% - 3px);
+        border-radius: 999px;
+        background: var(--card);
+        box-shadow: 0 2px 0 rgba(110, 80, 50, 0.18);
+        transition: transform 0.35s var(--spring);
+    }
+
+    .de .thumb {
+        transform: translateX(100%);
     }
 
     .option {
-        padding: 2px 6px;
-        border-radius: 4px;
-        transition:
-            color 0.2s,
-            background-color 0.2s;
+        position: relative;
+        padding: 2px 10px;
+        transition: color 0.2s;
     }
 
     .option.active {
-        color: var(--color-primary-blue);
-        background: white;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-
-    .separator {
-        color: #ccc;
+        color: var(--forest-deep);
     }
 </style>

@@ -1,10 +1,12 @@
 <script lang="ts">
-    import { gameStore, CATEGORIES, type Player } from "./store";
+    import { gameStore, CATEGORIES, type Category } from "./store";
     import { historyStore, type GameRecord } from "./historyStore";
     import { t } from "./i18n";
-    import { fade, slide, scale } from "svelte/transition";
-    import { onMount, tick, onDestroy } from "svelte";
+    import { slide } from "svelte/transition";
+    import { tick, onDestroy } from "svelte";
     import Chart from "chart.js/auto";
+    import Egg from "./ui/Egg.svelte";
+    import { CATEGORY_COLORS } from "./ui/CategoryIcon.svelte";
 
     let selectedGameId: string | null = null;
     let comparisonGroup: string[] | null = null;
@@ -66,7 +68,6 @@
     $: players = [...(displayedGame?.players || [])].sort(
         (a, b) => b.total - a.total,
     );
-    $: maxScore = Math.max(...players.map((p) => p.total), 1);
 
     // Reactive Chart Updates
     $: {
@@ -83,6 +84,16 @@
         $t;
         if (displayedGame && distributionCanvas) renderDistributionChart();
     }
+
+    /** Old history records may lack newer categories (e.g. hummingbirds). */
+    const score = (scores: Partial<Record<Category, number>>, cat: Category) => scores?.[cat] ?? 0;
+
+    /** Expansion categories are only listed when someone actually scored there. */
+    $: shownCategories = CATEGORIES.filter(
+        (cat) =>
+            (cat !== "nectar" && cat !== "hummingbirds") ||
+            (displayedGame?.players ?? []).some((p) => score(p.scores, cat) !== 0),
+    );
 
     // Helpers
     function formatDate(iso: string) {
@@ -129,7 +140,7 @@
             );
 
         if (relevantGames.length === 0) {
-            alert("No history for this exact group.");
+            alert($t("noGroupHistory"));
             return;
         }
 
@@ -164,7 +175,7 @@
                 // Accumulate
                 accumulated[p.name].total += p.total;
                 CATEGORIES.forEach((cat) => {
-                    accumulated[p.name][cat] += p.scores[cat] || 0;
+                    accumulated[p.name][cat] += score(p.scores, cat);
                 });
             });
             historyData.push({
@@ -285,10 +296,10 @@
         if (distributionChartInstance) distributionChartInstance.destroy();
 
         const labels = players.map((p) => p.name);
-        const datasets = CATEGORIES.map((cat) => ({
+        const datasets = shownCategories.map((cat) => ({
             label: $t(cat),
-            data: players.map((p) => p.scores[cat]),
-            backgroundColor: categoryColors[cat],
+            data: players.map((p) => score(p.scores, cat)),
+            backgroundColor: CATEGORY_COLORS[cat],
             stack: "Stack 0",
             barPercentage: 0.6,
         }));
@@ -329,22 +340,14 @@
         if (winnersChartInstance) winnersChartInstance.destroy();
         if (distributionChartInstance) distributionChartInstance.destroy();
     });
-
-    const categoryColors: Record<string, string> = {
-        round_goals: "#a3c4dc",
-        bonus: "#e9c46a",
-        nectar: "#e76f51",
-        birds: "#2a9d8f",
-        tucked: "#e6b8b8",
-        eggs: "#f4a261",
-        food: "#9fb98b",
-    };
 </script>
 
 <div class="stats-container">
     <!-- Header with Game Selector -->
     <div class="header">
-        <button class="btn-secondary back-btn" on:click={goHome}> 🏠 </button>
+        <button class="btn-secondary back-btn" on:click={goHome} aria-label={$t("home")}>
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
+        </button>
 
         <div class="selector-container">
             <button
@@ -381,7 +384,7 @@
                             </button>
                         {/each}
                     {:else}
-                        <button disabled>No history yet</button>
+                        <button disabled>{$t("noHistoryYet")}</button>
                     {/if}
                 </div>
             {/if}
@@ -392,7 +395,9 @@
                 <button
                     class="icon-btn"
                     on:click={deleteCurrentGame}
-                    title={$t("delete")}>🗑️</button
+                    aria-label={$t("delete")}
+                    title={$t("delete")}
+                    ><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg></button
                 >
             {/if}
         </div>
@@ -403,8 +408,8 @@
         <div class="comparison-overlay" transition:slide>
             <div class="card comparison-card">
                 <div class="comp-header">
-                    <h3>{$t("groupStats")} ({groupStats.games} Games)</h3>
-                    <button class="icon-btn" on:click={closeComparison}
+                    <h3>{$t("groupStats")} ({groupStats.games} {$t("games")})</h3>
+                    <button class="icon-btn" on:click={closeComparison} aria-label={$t("back")}
                         >✕</button
                     >
                 </div>
@@ -461,14 +466,14 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Category</th>
+                                    <th>{$t("categoryTitle")}</th>
                                     {#each comparisonGroup as name}
                                         <th>{name}</th>
                                     {/each}
                                 </tr>
                             </thead>
                             <tbody>
-                                {#each CATEGORIES as cat}
+                                {#each shownCategories as cat}
                                     {@const maxVal = getLeaderScore(cat)}
                                     <tr>
                                         <td class="cat-label">{$t(cat)}</td>
@@ -524,10 +529,7 @@
                             {#each players as player}
                                 <th>
                                     <div class="th-content">
-                                        <span
-                                            class="player-dot"
-                                            style="background-color: {player.color}"
-                                        ></span>
+                                        <Egg color={player.color} size={14} speckled={false} />
                                         {player.name}
                                     </div>
                                 </th>
@@ -535,11 +537,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#each CATEGORIES as cat}
+                        {#each shownCategories as cat}
                             <tr>
-                                <td class="cat-label">{$t(cat)}</td>
+                                <td class="cat-label">
+                                    <span class="cat-dot" style="background: {CATEGORY_COLORS[cat]}"></span>{$t(cat)}
+                                </td>
                                 {#each players as player}
-                                    <td>{player.scores[cat]}</td>
+                                    <td class:neg={score(player.scores, cat) < 0}>{score(player.scores, cat)}</td>
                                 {/each}
                             </tr>
                         {/each}
@@ -563,9 +567,8 @@
         </div>
     {:else}
         <div class="empty-state">
-            <p>No game data to display.</p>
-            <button class="btn-primary" on:click={goHome}>Start New Game</button
-            >
+            <p>{$t("noGameData")}</p>
+            <button class="btn-primary" on:click={goHome}>{$t("startNewGame")}</button>
         </div>
     {/if}
 </div>
@@ -724,11 +727,15 @@
         font-weight: 800;
         font-size: 1.1rem;
     }
-    .player-dot {
-        width: 10px;
-        height: 10px;
+    .cat-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        margin-right: 6px;
         border-radius: 50%;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .neg {
+        color: var(--berry);
     }
 
     /* Accumulated Stats Styles */
