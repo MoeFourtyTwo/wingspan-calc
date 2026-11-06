@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { drawSetup, seededRng } from './setupDraw';
-import { flipGoal, fromRecord, goalCaptions, toRecord, toggleSet, withGameOptions } from './setupRecord';
+import { cardText, flipGoal, fromRecord, goalCaptions, toRecord, toggleSet, withGameOptions } from './setupRecord';
 import { restoreGame, DEFAULT_OPTIONS } from '../store';
 
 const players = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
@@ -98,5 +98,17 @@ describe('goalCaptions', () => {
 
     test('no setup -> no captions', () => {
         expect(goalCaptions(null, 'en')).toEqual([null, null, null, null]);
+    });
+});
+
+describe('cardText', () => {
+    test('uses the edition text and its icon language, falling back to English', () => {
+        expect(cardText({ en: 'Birds that eat [seed]', de: '[seed] fressende Vögel' }, 'de')).toBe('Samen fressende Vögel');
+        expect(cardText({ en: 'Birds that eat [seed]', de: '[seed] fressende Vögel' }, 'en')).toBe('Birds that eat seed');
+        expect(cardText({ en: 'Birds that eat [seed]', de: null }, 'de')).toBe('Birds that eat seed');
+    });
+
+    test('turns HTML line breaks into newlines', () => {
+        expect(cardText({ en: 'Count birds.<br>Ground  nests <br/>count too', de: null }, 'en')).toBe('Count birds.\nGround nests\ncount too');
     });
 });

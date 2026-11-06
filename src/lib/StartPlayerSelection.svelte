@@ -321,7 +321,7 @@
                 {$t("turnStartPre")}<b>{target.name}</b>{$t("turnStartPost")}
             </p>
             <div class="go" in:pop={{ delay: 320, duration: 520, start: 0.2 }}>
-                <button class="btn-primary gold go-btn" onclick={() => gameStore.setPhase("SCORING")}>
+                <button class="btn-primary gold go-btn" onclick={() => gameStore.setPhase("DRAW")}>
                     {$t("letsGo")}
                     <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h13M13 6l6 6-6 6" />

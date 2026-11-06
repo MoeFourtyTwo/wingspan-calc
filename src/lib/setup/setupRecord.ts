@@ -79,3 +79,18 @@ export function goalCaptions(record: SetupRecordLike | null, edition: Edition): 
         return tile ? renderTokens(tile.sides[g.side][edition], edition) : null;
     });
 }
+
+/**
+ * Card text for display: the edition's wording with icons rendered in the
+ * language of the text actually shown (English fallback keeps English icons).
+ */
+export function cardText(text: { en: string; de: string | null }, edition: Edition): string {
+    const lang: Edition = edition === 'de' && text.de ? 'de' : 'en';
+    // Some source texts contain HTML line breaks; turn them into real newlines
+    // (renderTokens collapses whitespace, so split around it).
+    return (lang === 'de' ? text.de! : text.en)
+        .split(/<br\s*\/?>/i)
+        .map(part => renderTokens(part, lang))
+        .filter(Boolean)
+        .join('\n');
+}
