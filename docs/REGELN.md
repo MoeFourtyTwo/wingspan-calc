@@ -110,7 +110,45 @@ Der Rechner fragt die Futtermarker nur ab, wenn sie für den Sieg tatsächlich e
 
 ---
 
-## 8. Gefundene Inkonsistenzen in der bisherigen App (behoben)
+## 8. Spielaufbau: Rundenziele und Bonuskarten (Aufbau-Helfer)
+
+Umgesetzt in [`src/lib/setup/setupDraw.ts`](../src/lib/setup/setupDraw.ts):
+
+- **Rundenziele:** Aus allen Zielplättchen der verwendeten Erweiterungen werden 4 zufällig gezogen, eines pro Runde, jeweils mit zufälliger Seite nach oben (`drawSetup`).
+  - Die Plättchen aus *Flügelschlag Asien* gehören zur Duell-Karte und werden hier nicht verwendet.
+  - Auf dem Ozeanien-Plättchen kann auch „Kein Ziel“ liegen.
+- **Bonuskarten:** Jede Person erhält 2 zufällige Bonuskarten und behält am Ende des Aufbaus 1 davon.
+
+### Unterschiede zwischen deutscher und englischer Ausgabe
+
+Einige Bonuskarten werten Begriffe in den **Vogelnamen**. Weil sich die deutschen Vogelnamen von den englischen unterscheiden, hat Feuerland diese Karten angepasst:
+
+| Englisch | Deutsch (Feuerland) | Unterschied |
+|---|---|---|
+| Historian – Vögel, die nach einer Person benannt sind | **Biologe** – Vögel mit Pflanzen- oder Tiernamen | andere Bedingung |
+| Photographer – 4–5 Vögel: 3 Pkt. | **Fotograf** – 4–5 Vögel: 4 Pkt. | andere Punkte |
+| Anatomist (Körperteile im Namen) | **Morphologe** | andere Vögel erfüllen die Bedingung |
+| Cartographer (Geografiebegriffe im Namen) | **Geograf** | andere Vögel erfüllen die Bedingung |
+
+Je nachdem, welche Vogelkarten gemischt werden, verändert das die Häufigkeit passender Vögel stark. Feuerland empfiehlt deshalb, bestimmte Bonuskarten aus dem Spiel zu nehmen (`GERMAN_EDITION_REMOVALS`):
+
+| Vogelkarten aus | Bonuskarten entfernen |
+|---|---|
+| Grundspiel, Ozeanien | Biologe, Morphologe |
+| Grundspiel, Europa, Ozeanien | Geograf |
+| Europa, Ozeanien | Biologe, Geograf |
+| Grundspiel, Asien, Europa | Geograf, Morphologe |
+| Grundspiel, Asien, Ozeanien | Biologe, Geograf |
+| Grundspiel, Asien, Europa, Ozeanien | Biologe, Geograf |
+| Asien, Europa | Biologe, Geograf, Morphologe |
+| Asien, Ozeanien | Biologe, Fotograf, Geograf, Morphologe |
+| Asien, Europa, Ozeanien | Biologe, Geograf |
+
+Alle anderen Kombinationen brauchen keine Anpassung. *Mittel- und Südamerika* ist in der veröffentlichten Tabelle nicht berücksichtigt.
+
+**Kartendaten:** Die Bonuskarten-Datenbank (Namen, Bedingungen und Punkte auf Deutsch und Englisch) stammt aus dem Community-Projekt [wingsearch](https://github.com/navarog/wingsearch) (GPL-3.0) und wird mit `scripts/gen-bonus-cards.py` erzeugt.
+
+## 9. Gefundene Inkonsistenzen in der bisherigen App (behoben)
 
 | Problem | Korrektur |
 |---|---|
@@ -123,10 +161,11 @@ Der Rechner fragt die Futtermarker nur ab, wenn sie für den Sieg tatsächlich e
 | Begriff „Wasser“ statt des offiziellen „Feuchtgebiet“ | Begriffe an die Feuerland-Ausgabe angepasst |
 | Keine Obergrenze für die Spielerzahl | höchstens 7 Spieler (Schwarmmodus) |
 
-## 9. Offene Punkte
+## 10. Offene Punkte
 
 Die offiziellen PDF-Regelhefte waren bei der Erstellung nicht direkt abrufbar. Die folgenden Punkte stammen deshalb aus Rezensionen bzw. Zusammenfassungen und sollten mit dem gedruckten Regelheft abgeglichen werden:
 
 - die offizielle deutsche Bezeichnung der Kolibri-Zeile im Wertungsblock von *Mittel- und Südamerika*;
 - die genauen Werte auf den Kolibri-Leisten (laut Rezensionen etwa −3 bis +10);
-- die Punktwerte der Duell- und Schwarm-Zieltafeln aus *Flügelschlag Asien*.
+- die Punktwerte der Duell- und Schwarm-Zieltafeln aus *Flügelschlag Asien*;
+- die deutschen Namen der Bonuskarten und Zielplättchen aus *Mittel- und Südamerika* (bis dahin zeigt der Rechner die englischen Namen) sowie die deutschen Namen der fünf Kolibri-Gruppen.
