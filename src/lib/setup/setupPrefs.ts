@@ -47,3 +47,10 @@ export function createSetupPrefs(language: Edition) {
     });
     return store;
 }
+
+let shared: ReturnType<typeof createSetupPrefs> | null = null;
+
+/** The app-wide prefs store, created on first use (initial edition = current UI language). */
+export function sharedSetupPrefs(language: Edition) {
+    return (shared ??= createSetupPrefs(language));
+}
