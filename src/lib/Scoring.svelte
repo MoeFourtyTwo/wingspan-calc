@@ -483,8 +483,9 @@
     /* ---------- Number cards ---------- */
     .player-card {
         display: flex;
+        flex-wrap: wrap; /* narrow phones + signed category: controls drop below the name */
         align-items: center;
-        gap: 10px;
+        gap: 8px 10px;
         padding: 10px 10px 10px 12px;
         background: var(--card);
         border: 1.5px solid var(--line);
@@ -505,7 +506,7 @@
     }
 
     .who {
-        flex: 1;
+        flex: 1 1 60px;
         min-width: 0;
         display: flex;
         flex-direction: column;
@@ -520,6 +521,7 @@
     }
 
     .running {
+        white-space: nowrap;
         font-size: 0.85rem;
         font-weight: 700;
         color: var(--ink-soft);
@@ -529,6 +531,7 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        margin-left: auto;
     }
 
     .step {

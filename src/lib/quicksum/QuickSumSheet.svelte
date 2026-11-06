@@ -461,7 +461,7 @@
     .term .op {
         color: var(--ink-soft);
         font-size: 1.15rem;
-        padding: 0 3px;
+        padding: 0 5px 0 4px;
     }
 
     .term.neg .val {
