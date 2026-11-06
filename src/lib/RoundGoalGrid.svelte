@@ -1,7 +1,8 @@
 <script lang="ts">
     import { gameStore, validateRoundGoalsRow } from "./store";
     import { ROUND_GOAL_POINTS } from "./rules/scoring";
-    import { t } from "./i18n";
+    import { t, language } from "./i18n";
+    import { goalCaptions } from "./setup/setupRecord";
     import Egg from "./ui/Egg.svelte";
     import { sendEgg, receiveEgg } from "./ui/placement";
 
@@ -17,6 +18,9 @@
 
     let players = $derived($gameStore.players);
     let active = $derived(players.find((p) => p.id === activePlayerId));
+
+    // Goals drawn with the setup helper, shown as a caption per round.
+    let captions = $derived(goalCaptions($gameStore.setup, $language));
 
     function place(round: number, rank: number) {
         if (!activePlayerId) return;
@@ -34,8 +38,12 @@
 
     {#each ROUNDS as round}
         {@const valid = validateRoundGoalsRow(players, round)}
-        <div class="row" class:invalid={!valid}>
+        {@const caption = captions[round]}
+        <div class="row" class:invalid={!valid} class:has-caption={!!caption}>
             <span class="round-label">R{round + 1}</span>
+            {#if caption}
+                <span class="caption" title={$t("setupGoalOfRound", { n: round + 1, goal: caption })}>{caption}</span>
+            {/if}
             {#each RANKS as rank}
                 {@const pts = rank > 0 ? ROUND_GOAL_POINTS[round][rank - 1] : null}
                 <button
@@ -94,6 +102,30 @@
         transition:
             background-color 0.2s,
             border-color 0.2s;
+    }
+
+    /* Drawn goal as a small first line; the round badge spans both lines. */
+    .row.has-caption {
+        row-gap: 2px;
+    }
+
+    .row.has-caption .round-label {
+        grid-row: span 2;
+    }
+
+    .caption {
+        grid-column: 2 / -1;
+        min-width: 0;
+        padding: 0 4px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--forest-deep);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
 
     .row.invalid {

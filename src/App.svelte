@@ -6,12 +6,13 @@
     import Result from "./lib/Result.svelte";
     import Stats from "./lib/Stats.svelte";
     import StartPlayerSelection from "./lib/StartPlayerSelection.svelte";
+    import SetupDraw from "./lib/SetupDraw.svelte";
     import LanguageToggle from "./lib/LanguageToggle.svelte";
     import Bird from "./lib/ui/Bird.svelte";
     import Feather from "./lib/ui/Feather.svelte";
     import { swoop } from "./lib/ui/motion";
 
-    const ORDER: Phase[] = ["SETUP", "SELECTION", "SCORING", "RESULT", "STATS"];
+    const ORDER: Phase[] = ["SETUP", "SELECTION", "DRAW", "SCORING", "RESULT", "STATS"];
 
     let phase = $derived($gameStore.currentPhase);
 
@@ -75,6 +76,8 @@
                     <Setup />
                 {:else if phase === "SELECTION"}
                     <StartPlayerSelection />
+                {:else if phase === "DRAW"}
+                    <SetupDraw />
                 {:else if phase === "SCORING"}
                     <Scoring />
                 {:else if phase === "RESULT"}

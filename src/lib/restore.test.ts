@@ -83,3 +83,32 @@ describe('restoreGame (resume an interrupted game)', () => {
         expect(s.players).toHaveLength(7);
     });
 });
+
+describe('restoreGame: setup helper record', () => {
+    const setup = {
+        goals: [
+            { tileId: 'core-forest', side: 1 },
+            { tileId: 'core-bowl', side: 0 },
+            { tileId: 'eu-row', side: 7 },
+            { tileId: 'oc-beak', side: 1 },
+        ],
+        bonus: { a: [1000] }, // left over from an older version
+    };
+
+    test('keeps a valid record, normalises sides and drops unknown fields', () => {
+        const s = restoreGame(game({ setup }))!;
+        expect(s.setup).toEqual({
+            goals: [
+                { tileId: 'core-forest', side: 1 },
+                { tileId: 'core-bowl', side: 0 },
+                { tileId: 'eu-row', side: 0 },
+                { tileId: 'oc-beak', side: 1 },
+            ],
+        });
+    });
+
+    test.each([undefined, null, 'x', { goals: [] }, { goals: [{ tileId: '' }, {}, {}, {}] }])(
+        'invalid record %# becomes null',
+        raw => expect(restoreGame(game({ setup: raw }))!.setup).toBeNull(),
+    );
+});
