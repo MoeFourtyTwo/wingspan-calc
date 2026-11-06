@@ -3,27 +3,15 @@
     import { get } from "svelte/store";
     import { gameStore } from "./store";
     import { t, language, type TranslationKey } from "./i18n";
-    import { SETS, type CardSet, type Edition } from "./data/types";
-    import { BONUS_CARDS } from "./data/bonusCards";
-    import { renderTokens } from "./data/tokens";
-    import {
-        drawSetup,
-        redrawGoal,
-        germanEditionRemovals,
-        localized,
-        type SetupDraw,
-        type SetupError,
-    } from "./setup/setupDraw";
-    import { sharedSetupPrefs, type SetupPrefs } from "./setup/setupPrefs";
-    import { cardText, flipGoal, fromRecord, toRecord, toggleSet, withGameOptions } from "./setup/setupRecord";
-    import Egg from "./ui/Egg.svelte";
+    import type { CardSet } from "./data/types";
+    import { drawSetup, redrawGoal, type SetupDraw, type SetupError } from "./setup/setupDraw";
+    import { GOAL_SETS, setupPrefs as prefs, type SetupPrefs } from "./setup/setupPrefs";
+    import { flipGoal, fromRecord, goalText as renderGoal, toRecord, toggleSet, withGameOptions } from "./setup/setupRecord";
     import Bird from "./ui/Bird.svelte";
     import Burst from "./ui/Burst.svelte";
     import Feather from "./ui/Feather.svelte";
     import { slide } from "svelte/transition";
     import { pop, swoop, reducedMotion, ms } from "./ui/motion";
-
-    const prefs = sharedSetupPrefs(get(language));
 
     const SET_COLORS: Record<CardSet, string> = {
         core: "var(--forest)",
@@ -32,30 +20,21 @@
         asia: "var(--berry)",
         americas: "var(--hummingbird)",
     };
-    const EDITIONS: Edition[] = ["de", "en"];
     const ERROR_KEYS: Record<SetupError, TranslationKey> = {
         "not-enough-goals": "setupErr_notEnoughGoals",
-        "not-enough-bonus-cards": "setupErr_notEnoughBonus",
-        "no-players": "setupErr_noPlayers",
     };
 
     let players = $derived($gameStore.players);
-    let edition: Edition = $derived($prefs.edition);
-    let removals = $derived($prefs.edition === "de" ? germanEditionRemovals($prefs.sets) : []);
-    let removedCards = $derived(
-        removals.map((id) => BONUS_CARDS.find((c) => c.id === id)).filter((c) => !!c),
-    );
 
     let draw: SetupDraw | null = $state.raw(null);
     let error: SetupError | null = $state(null);
-    /** Bumped on every full (re)draw: re-mounts the table so it can be dealt again. */
+    /** Bumped on every full (re)draw: re-mounts the board so it can be dealt again. */
     let generation = $state(0);
     let dealing = $state(false);
     /** The table settings fold away so the deal itself stays in view. */
     let controlsOpen = $state(false);
     let bursts = $state(0);
     let tableEl: HTMLDivElement | undefined = $state();
-    let deckEl: HTMLSpanElement | undefined = $state();
 
     // ---------- Animation bookkeeping ----------
     const anims = new Set<Animation>();
@@ -95,18 +74,12 @@
 
     // ---------- Drawing ----------
     function save() {
-        gameStore.setSetup(draw ? toRecord(draw, players) : null);
+        gameStore.setSetup(draw ? toRecord(draw) : null);
     }
 
     function drawAll() {
         stopAll();
-        const p = get(prefs);
-        const r = drawSetup({
-            sets: p.sets,
-            edition: p.edition,
-            applyEditionRemovals: p.applyEditionRemovals,
-            playerCount: players.length,
-        });
+        const r = drawSetup(get(prefs).sets);
         draw = r.ok ? r.draw : null;
         error = r.ok ? null : r.error;
         if (error) controlsOpen = true;
@@ -116,18 +89,12 @@
         else dealing = false;
     }
 
-    function effectiveRemovals(p: SetupPrefs) {
-        return p.edition === "de" && p.applyEditionRemovals ? germanEditionRemovals(p.sets).join() : "";
-    }
-
-    /** Change prefs; only re-deal if the deck or the goal pool actually changed. */
+    /** Change prefs and re-deal if the goal pool changed. */
     function changePrefs(fn: (p: SetupPrefs) => SetupPrefs) {
         const before = get(prefs);
         const after = fn(before);
         prefs.set(after);
-        if (after.sets.join() !== before.sets.join() || effectiveRemovals(after) !== effectiveRemovals(before)) {
-            drawAll();
-        }
+        if (after.sets.join() !== before.sets.join()) drawAll();
     }
 
     // ---------- The big deal ----------
@@ -138,7 +105,6 @@
 
         const goalEls = [...tableEl.querySelectorAll<HTMLElement>(".goal-flip")];
         const slotEls = [...tableEl.querySelectorAll<HTMLElement>(".slot")];
-        const cardEls = [...tableEl.querySelectorAll<HTMLElement>(".bcard")];
         let end = 0;
 
         // 1) Goal tiles slam onto the round slots, flipping face-up on the way down.
@@ -167,35 +133,6 @@
                     ),
                 );
             }
-            end = Math.max(end, delay + duration);
-        });
-
-        // 2) Bonus cards fly from the deck, round-robin like a real deal.
-        const deck = deckEl?.getBoundingClientRect();
-        const n = Math.max(1, players.length);
-        const stagger = Math.min(130, 760 / (2 * n));
-        const start = 700;
-        cardEls.forEach((el) => {
-            const p = Number(el.dataset.player);
-            const k = Number(el.dataset.card);
-            const order = k * n + p;
-            const delay = start + order * stagger;
-            const duration = 520;
-            const r = el.getBoundingClientRect();
-            const dx = deck ? deck.left + deck.width / 2 - (r.left + r.width / 2) : 0;
-            const dy = deck ? deck.top + deck.height / 2 - (r.top + r.height / 2) : -200;
-            const spin = (order % 2 ? 1 : -1) * (14 + (order * 7) % 12);
-            track(
-                el.animate(
-                    [
-                        { transform: `translate(${dx}px, ${dy}px) rotate(${spin}deg) scale(0.32) rotateY(180deg)`, opacity: 0 },
-                        { opacity: 1, offset: 0.08 },
-                        { transform: `translate(${dx * 0.35}px, ${dy * 0.35 - 26}px) rotate(${-spin * 0.4}deg) scale(0.85) rotateY(90deg)`, offset: 0.55 },
-                        { transform: "none", opacity: 1 },
-                    ],
-                    { duration, delay, fill: "backwards", easing: "cubic-bezier(.2,.75,.3,1.05)" },
-                ),
-            );
             end = Math.max(end, delay + duration);
         });
 
@@ -273,7 +210,7 @@
 
     function goalText(i: number) {
         const g = draw?.goals[i];
-        return g ? renderTokens(g.tile.sides[g.side][edition], edition) : "";
+        return g ? renderGoal(g, $language) : "";
     }
 
     // ---------- Navigation ----------
@@ -294,7 +231,7 @@
             gameStore.setPhase("SETUP");
             return;
         }
-        const restored = fromRecord($gameStore.setup, players);
+        const restored = fromRecord($gameStore.setup);
         if (restored) {
             draw = restored;
             return;
@@ -321,7 +258,6 @@
                     {#each $prefs.sets as set (set)}
                         <span class="sum-set" style="--set: {SET_COLORS[set]}">{$t(`set_${set}` as TranslationKey)}</span>
                     {/each}
-                    <span class="sum-ed">{$prefs.edition.toUpperCase()}</span>
                 </span>
             </span>
             <svg class="chev" class:open={controlsOpen} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg>
@@ -331,7 +267,7 @@
         <div id="setup-controls" class="controls-body" transition:slide={{ duration: ms(260) }}>
         <span class="label">{$t("setupSets")}</span>
         <div class="chips" role="group" aria-label={$t("setupSets")}>
-            {#each SETS as set}
+            {#each GOAL_SETS as set}
                 {@const on = $prefs.sets.includes(set)}
                 <button
                     class="chip"
@@ -350,43 +286,6 @@
             {/each}
         </div>
 
-        <span class="label">{$t("setupEdition")}</span>
-        <div class="segmented" role="group" aria-label={$t("setupEdition")}>
-            {#each EDITIONS as ed}
-                <button
-                    class="seg"
-                    class:active={$prefs.edition === ed}
-                    aria-pressed={$prefs.edition === ed}
-                    onclick={() => changePrefs((p) => ({ ...p, edition: ed }))}
-                >
-                    {$t(`edition_${ed}` as TranslationKey)}
-                </button>
-            {/each}
-        </div>
-        <p class="hint">{$t("setupEditionHint")}</p>
-
-        {#if removedCards.length > 0}
-            <div class="removals" in:swoop={{ y: 8, duration: 280 }}>
-                <label class="toggle-row">
-                    <span class="toggle-title">{$t("setupRemovals")}</span>
-                    <input
-                        type="checkbox"
-                        class="switch"
-                        checked={$prefs.applyEditionRemovals}
-                        onchange={(e) => {
-                            const checked = e.currentTarget.checked;
-                            changePrefs((p) => ({ ...p, applyEditionRemovals: checked }));
-                        }}
-                    />
-                </label>
-                <p class="hint">{$t("setupRemovalsHint")}</p>
-                <ul class="removed" class:applied={$prefs.applyEditionRemovals}>
-                    {#each removedCards as card (card.id)}
-                        <li>{localized(card.name, "de")}</li>
-                    {/each}
-                </ul>
-            </div>
-        {/if}
         </div>
         {/if}
     </section>
@@ -432,7 +331,7 @@
                 <!-- Deck -->
                 <div class="deck-row">
                     <button class="btn-secondary shuffle" onclick={drawAll} disabled={dealing}>
-                        <span class="deck" class:dealing bind:this={deckEl} aria-hidden="true">
+                        <span class="deck" class:dealing aria-hidden="true">
                             <span class="deck-card c3"></span>
                             <span class="deck-card c2"></span>
                             <span class="deck-card c1"><Feather color="#fffaf0" size={22} /></span>
@@ -446,34 +345,6 @@
                     {/key}
                 </div>
 
-                <!-- Hands -->
-                <section class="hands">
-                    <h3 class="section-title">{$t("bonus")}</h3>
-                    {#each players as player, p (player.id)}
-                        <div class="player-hand">
-                            <div class="hand-head">
-                                <Egg color={player.color} size={22} initial={player.name.slice(0, 1).toUpperCase()} />
-                                <span class="hand-name">{player.name}</span>
-                                <span class="keep">{$t("setupKeepOne")}</span>
-                            </div>
-                            <div class="hand-cards">
-                                {#each current.bonus[p] ?? [] as card, k (card.id)}
-                                    <article class="bcard" data-player={p} data-card={k}>
-                                        <div class="face front" style="--set: {SET_COLORS[card.set]}">
-                                            <span class="set-badge">{$t(`set_${card.set}` as TranslationKey)}</span>
-                                            <h4 class="bname">{cardText(card.name, edition)}</h4>
-                                            <p class="cond">{cardText(card.condition, edition)}</p>
-                                            <p class="vp">{cardText(card.vp, edition)}</p>
-                                        </div>
-                                        <div class="face back" aria-hidden="true">
-                                            <Feather color="#fffaf0" size={34} />
-                                        </div>
-                                    </article>
-                                {/each}
-                            </div>
-                        </div>
-                    {/each}
-                </section>
             {/key}
 
             {#if dealing}
@@ -554,8 +425,7 @@
         gap: 4px;
     }
 
-    .sum-set,
-    .sum-ed {
+    .sum-set {
         padding: 0 8px;
         border-radius: 999px;
         font-size: 0.72rem;
@@ -563,13 +433,6 @@
         line-height: 1.7;
         color: #fff;
         background: var(--set);
-    }
-
-    .sum-ed {
-        color: var(--ink-soft);
-        background: var(--paper);
-        border: 1.5px solid var(--line);
-        line-height: 1.5;
     }
 
     .chev {
@@ -646,124 +509,6 @@
         transform: scale(0.92);
     }
 
-    .segmented {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
-    .seg {
-        min-height: 42px;
-        padding: 8px 10px;
-        border-radius: 14px;
-        border: 2px solid var(--line);
-        background: #fff;
-        font-family: var(--font-display);
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .seg.active {
-        border-color: var(--forest);
-        background: #e3f1ec;
-        box-shadow: 0 3px 0 var(--forest);
-        transform: translateY(-2px);
-    }
-
-    .seg:active {
-        transform: scale(0.95);
-    }
-
-    .hint {
-        margin-top: 6px;
-        font-size: 0.8rem;
-        line-height: 1.35;
-        color: var(--ink-soft);
-    }
-
-    .removals {
-        margin-top: 10px;
-        padding-top: 4px;
-        border-top: 1.5px dashed var(--line);
-    }
-
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 8px 0 0;
-        cursor: pointer;
-    }
-
-    .toggle-title {
-        font-weight: 800;
-        line-height: 1.25;
-    }
-
-    .switch {
-        appearance: none;
-        flex-shrink: 0;
-        position: relative;
-        width: 52px;
-        height: 30px;
-        border-radius: 999px;
-        background: #d6ccb6;
-        box-shadow: inset 0 2px 3px rgba(60, 40, 20, 0.25);
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .switch::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
-        background: #fffaf0;
-        box-shadow: 0 2px 2px rgba(60, 40, 20, 0.3);
-        transition: transform 0.35s var(--spring);
-    }
-
-    .switch:checked {
-        background: var(--forest);
-    }
-
-    .switch:checked::after {
-        transform: translateX(22px) rotate(12deg);
-    }
-
-    .removed {
-        list-style: none;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 6px;
-    }
-
-    .removed li {
-        padding: 2px 10px;
-        border-radius: 8px;
-        background: var(--paper);
-        border: 1.5px dashed var(--line);
-        font-size: 0.82rem;
-        font-weight: 700;
-        transition: opacity 0.2s;
-    }
-
-    .removed.applied li {
-        text-decoration: line-through;
-        text-decoration-color: var(--berry);
-        text-decoration-thickness: 2px;
-        opacity: 0.8;
-    }
-
-    .removed:not(.applied) li {
-        opacity: 0.55;
-    }
-
     .error {
         display: flex;
         align-items: center;
@@ -832,8 +577,7 @@
         box-shadow: 0 2px 0 var(--grassland-deep);
     }
 
-    .goal-flip,
-    .bcard {
+    .goal-flip {
         position: relative;
         height: 100%;
         transform-style: preserve-3d;
@@ -981,120 +725,6 @@
         }
     }
 
-    /* ---------- Hands ---------- */
-    .hands {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .hands .section-title {
-        margin-bottom: 0;
-    }
-
-    .player-hand {
-        padding: 10px;
-        border-radius: var(--radius-md);
-        background: rgba(255, 250, 240, 0.6);
-        border: 1.5px solid var(--line);
-    }
-
-    .hand-head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 2px 8px;
-        margin-bottom: 8px;
-        min-width: 0;
-    }
-
-    .hand-name {
-        flex: 0 1 auto;
-        max-width: calc(100% - 30px);
-        font-weight: 800;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .keep {
-        flex: 1 0 auto;
-        font-family: var(--font-hand);
-        font-size: 1.1rem;
-        line-height: 1;
-        color: var(--twig);
-        text-align: right;
-    }
-
-    .hand-cards {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        perspective: 800px;
-    }
-
-    .bcard {
-        min-width: 0;
-    }
-
-    .bcard .face.front {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        height: 100%;
-        padding: 8px 8px 8px;
-        background: #fffdf6;
-        border: 1.5px solid rgba(110, 80, 50, 0.25);
-        border-top: 5px solid var(--set);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .set-badge {
-        align-self: flex-start;
-        padding: 0 7px;
-        border-radius: 999px;
-        background: var(--set);
-        color: #fff;
-        font-size: 0.64rem;
-        font-weight: 800;
-        letter-spacing: 0.03em;
-        line-height: 1.6;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .bname {
-        font-size: 0.95rem;
-        line-height: 1.15;
-        overflow-wrap: anywhere;
-        hyphens: auto;
-    }
-
-    .cond {
-        flex: 1;
-        white-space: pre-line;
-        font-size: 0.78rem;
-        line-height: 1.3;
-        color: var(--ink-soft);
-        overflow-wrap: anywhere;
-        hyphens: auto;
-    }
-
-    .vp {
-        font-size: 0.74rem;
-        font-weight: 800;
-        line-height: 1.3;
-        padding: 4px 6px;
-        border-radius: 8px;
-        background: var(--paper);
-        color: var(--twig-deep);
-        white-space: pre-line;
-        overflow-wrap: anywhere;
-    }
-
     /* ---------- Skip overlay ---------- */
     .skip-overlay {
         position: absolute;
@@ -1161,4 +791,5 @@
             display: none;
         }
     }
+
 </style>

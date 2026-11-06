@@ -22,12 +22,11 @@ export { CATEGORIES, type Category } from './rules/scoring';
 export type Phase = 'SETUP' | 'SELECTION' | 'DRAW' | 'SCORING' | 'RESULT' | 'STATS';
 
 /**
- * Result of the setup helper, stored by id so it survives a reload.
- * goals[round] = tile id + face-up side; bonus[playerId] = dealt card ids.
+ * Round goals drawn with the setup helper, stored by id so they survive a
+ * reload. goals[round] = tile id + face-up side.
  */
 export interface SetupRecord {
     goals: { tileId: string; side: 0 | 1 }[];
-    bonus: Record<string, number[]>;
 }
 
 /** Green (competitive, placement based) or blue (1 pt per item, max 5) goal board side. */
@@ -63,7 +62,7 @@ export interface GameState {
     currentScoringCategoryIndex: number;
     startPlayerId: string | null;
     options: GameOptions;
-    /** Round goals and bonus cards drawn with the setup helper (optional). */
+    /** Round goals drawn with the setup helper (optional). */
     setup: SetupRecord | null;
 }
 
@@ -162,23 +161,18 @@ export function restoreGame(raw: unknown): GameState | null {
         currentPhase: players.length === 0 ? 'SETUP' : (g.currentPhase as Phase),
         currentScoringCategoryIndex: Math.min(maxIndex, Math.max(0, Number(g.currentScoringCategoryIndex) || 0)),
         startPlayerId: players.some(p => p.id === g.startPlayerId) ? g.startPlayerId! : null,
-        setup: restoreSetup(g.setup, players),
+        setup: restoreSetup(g.setup),
         options,
     };
 }
 
-function restoreSetup(raw: unknown, players: Player[]): SetupRecord | null {
+function restoreSetup(raw: unknown): SetupRecord | null {
     if (!raw || typeof raw !== 'object') return null;
     const r = raw as Partial<SetupRecord>;
     if (!Array.isArray(r.goals) || r.goals.length !== ROUND_COUNT) return null;
     const goals = r.goals.map(g => ({ tileId: String(g?.tileId ?? ''), side: (g?.side === 1 ? 1 : 0) as 0 | 1 }));
     if (goals.some(g => !g.tileId)) return null;
-    const bonus: Record<string, number[]> = {};
-    for (const p of players) {
-        const ids = r.bonus?.[p.id];
-        if (Array.isArray(ids)) bonus[p.id] = ids.map(Number).filter(Number.isInteger);
-    }
-    return { goals, bonus };
+    return { goals };
 }
 
 function loadActiveGame(): GameState | null {

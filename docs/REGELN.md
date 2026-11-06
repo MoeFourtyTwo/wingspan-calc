@@ -110,16 +110,16 @@ Der Rechner fragt die Futtermarker nur ab, wenn sie für den Sieg tatsächlich e
 
 ---
 
-## 8. Spielaufbau: Rundenziele und Bonuskarten (Aufbau-Helfer)
+## 8. Spielaufbau: Rundenziele (Aufbau-Helfer) und Bonuskarten
 
 Umgesetzt in [`src/lib/setup/setupDraw.ts`](../src/lib/setup/setupDraw.ts):
 
 - **Rundenziele:** Aus allen Zielplättchen der verwendeten Erweiterungen werden 4 zufällig gezogen, eines pro Runde, jeweils mit zufälliger Seite nach oben (`drawSetup`).
   - Die Plättchen aus *Flügelschlag Asien* gehören zur Duell-Karte und werden hier nicht verwendet.
   - Auf dem Ozeanien-Plättchen kann auch „Kein Ziel“ liegen.
-- **Bonuskarten:** Jede Person erhält 2 zufällige Bonuskarten und behält am Ende des Aufbaus 1 davon.
+- **Bonuskarten:** Jede Person erhält 2 zufällige Bonuskarten und behält am Ende des Aufbaus 1 davon. Der Rechner teilt sie bewusst **nicht** aus: Bonuskarten sind geheim, und auf einem gemeinsamen Bildschirm würde die Person am Handy alle Karten sehen.
 
-### Unterschiede zwischen deutscher und englischer Ausgabe
+### Unterschiede zwischen deutscher und englischer Ausgabe (zum Aufbau am Tisch)
 
 Einige Bonuskarten werten Begriffe in den **Vogelnamen**. Weil sich die deutschen Vogelnamen von den englischen unterscheiden, hat Feuerland diese Karten angepasst:
 
@@ -130,7 +130,7 @@ Einige Bonuskarten werten Begriffe in den **Vogelnamen**. Weil sich die deutsche
 | Anatomist (Körperteile im Namen) | **Morphologe** | andere Vögel erfüllen die Bedingung |
 | Cartographer (Geografiebegriffe im Namen) | **Geograf** | andere Vögel erfüllen die Bedingung |
 
-Je nachdem, welche Vogelkarten gemischt werden, verändert das die Häufigkeit passender Vögel stark. Feuerland empfiehlt deshalb, bestimmte Bonuskarten aus dem Spiel zu nehmen (`GERMAN_EDITION_REMOVALS`):
+Je nachdem, welche Vogelkarten gemischt werden, verändert das die Häufigkeit passender Vögel stark. Feuerland empfiehlt deshalb, bestimmte Bonuskarten vor dem Mischen aus dem Spiel zu nehmen:
 
 | Vogelkarten aus | Bonuskarten entfernen |
 |---|---|
@@ -146,7 +146,7 @@ Je nachdem, welche Vogelkarten gemischt werden, verändert das die Häufigkeit p
 
 Alle anderen Kombinationen brauchen keine Anpassung. *Mittel- und Südamerika* ist in der veröffentlichten Tabelle nicht berücksichtigt.
 
-**Kartendaten:** Die Bonuskarten-Datenbank (Namen, Bedingungen und Punkte auf Deutsch und Englisch) stammt aus dem Community-Projekt [wingsearch](https://github.com/navarog/wingsearch) (GPL-3.0) und wird mit `scripts/gen-bonus-cards.py` erzeugt.
+Quelle der Tabellen: Feuerland-Hinweise, zusammengetragen im Community-Projekt [wingsearch](https://github.com/navarog/wingsearch).
 
 ## 9. Gefundene Inkonsistenzen in der bisherigen App (behoben)
 
@@ -168,4 +168,4 @@ Die offiziellen PDF-Regelhefte waren bei der Erstellung nicht direkt abrufbar. D
 - die offizielle deutsche Bezeichnung der Kolibri-Zeile im Wertungsblock von *Mittel- und Südamerika*;
 - die genauen Werte auf den Kolibri-Leisten (laut Rezensionen etwa −3 bis +10);
 - die Punktwerte der Duell- und Schwarm-Zieltafeln aus *Flügelschlag Asien*;
-- die deutschen Namen der Bonuskarten und Zielplättchen aus *Mittel- und Südamerika* (bis dahin zeigt der Rechner die englischen Namen) sowie die deutschen Namen der fünf Kolibri-Gruppen.
+- die deutschen Texte der Zielplättchen aus *Mittel- und Südamerika* und die deutschen Namen der fünf Kolibri-Gruppen (bisher eigene Übersetzungen).

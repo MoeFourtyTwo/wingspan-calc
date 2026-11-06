@@ -2,7 +2,7 @@
  * Icon tokens used in card texts (e.g. "[forest]") and how to render them.
  * The German names of the five Americas hummingbird groups are provisional.
  */
-import type { Edition } from './types';
+import type { Lang } from './types';
 
 export const TOKENS: Readonly<Record<string, { en: string; de: string }>> = {
     point: { en: 'pts', de: 'Pkt.' },
@@ -30,7 +30,7 @@ export const TOKENS: Readonly<Record<string, { en: string; de: string }>> = {
 };
 
 /** Replace `[token]` markers with readable words in the given language. */
-export function renderTokens(text: string, lang: Edition): string {
+export function renderTokens(text: string, lang: Lang): string {
     return text
         .replace(/\[([a-z_-]+)\]/g, (m, key: string) => TOKENS[key]?.[lang] ?? m)
         .replace(/(\d)(pts|Pkt\.)/g, '$1 $2')

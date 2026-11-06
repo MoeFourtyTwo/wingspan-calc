@@ -1,12 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { drawSetup, seededRng } from './setupDraw';
-import { cardText, flipGoal, fromRecord, goalCaptions, toRecord, toggleSet, withGameOptions } from './setupRecord';
+import { flipGoal, fromRecord, goalCaptions, toRecord, toggleSet, withGameOptions } from './setupRecord';
 import { restoreGame, DEFAULT_OPTIONS } from '../store';
 
-const players = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
-
 function draw(seed = 1) {
-    const r = drawSetup({ sets: ['core', 'european'], edition: 'de', playerCount: players.length, rng: seededRng(seed) });
+    const r = drawSetup(['core', 'european'], seededRng(seed));
     if (!r.ok) throw new Error(r.error);
     return r.draw;
 }
@@ -14,16 +12,13 @@ function draw(seed = 1) {
 describe('toRecord / fromRecord', () => {
     test('round-trips a draw by ids', () => {
         const d = draw();
-        const rec = toRecord(d, players);
-        expect(rec.goals).toHaveLength(4);
-        expect(Object.keys(rec.bonus)).toEqual(['a', 'b', 'c']);
-        expect(rec.bonus.b).toEqual(d.bonus[1].map(c => c.id));
-        expect(fromRecord(rec, players)).toEqual(d);
+        const rec = toRecord(d);
+        expect(rec).toEqual({ goals: d.goals.map(g => ({ tileId: g.tile.id, side: g.side })) });
+        expect(fromRecord(rec)).toEqual(d);
     });
 
     test('survives the JSON + restoreGame round-trip of the game store', () => {
         const d = draw(7);
-        const rec = toRecord(d, players);
         const raw = JSON.parse(
             JSON.stringify({
                 gameId: 'g',
@@ -31,21 +26,18 @@ describe('toRecord / fromRecord', () => {
                 currentScoringCategoryIndex: 0,
                 startPlayerId: 'a',
                 options: DEFAULT_OPTIONS,
-                setup: rec,
-                players: players.map(p => ({ ...p, name: p.id, color: '#fff' })),
+                setup: toRecord(d),
+                players: [{ id: 'a', name: 'A', color: '#fff' }],
             }),
         );
-        expect(fromRecord(restoreGame(raw)!.setup, players)).toEqual(d);
+        expect(fromRecord(restoreGame(raw)!.setup)).toEqual(d);
     });
 
     test('returns null when the record does not fit', () => {
-        const rec = toRecord(draw(), players);
-        expect(fromRecord(null, players)).toBeNull();
-        expect(fromRecord(rec, [])).toBeNull();
-        expect(fromRecord(rec, [...players, { id: 'new' }])).toBeNull();
-        expect(fromRecord({ ...rec, goals: rec.goals.slice(0, 3) }, players)).toBeNull();
-        expect(fromRecord({ ...rec, goals: rec.goals.map((g, i) => (i ? g : { ...g, tileId: 'nope' })) }, players)).toBeNull();
-        expect(fromRecord({ ...rec, bonus: { ...rec.bonus, a: [rec.bonus.a[0], 424242] } }, players)).toBeNull();
+        const rec = toRecord(draw());
+        expect(fromRecord(null)).toBeNull();
+        expect(fromRecord({ goals: rec.goals.slice(0, 3) })).toBeNull();
+        expect(fromRecord({ goals: rec.goals.map((g, i) => (i ? g : { ...g, tileId: 'nope' })) })).toBeNull();
     });
 });
 
@@ -83,10 +75,9 @@ describe('goalCaptions', () => {
             { tileId: 'oc-food', side: 0 as const },
             { tileId: 'gone', side: 0 as const },
         ],
-        bonus: {},
     };
 
-    test('renders the face-up side in the card edition', () => {
+    test('renders the face-up side in the UI language; unknown tiles give null', () => {
         expect(goalCaptions(rec, 'de')).toEqual([
             'Vögel im Wald',
             'Eier im Wald',
@@ -98,17 +89,5 @@ describe('goalCaptions', () => {
 
     test('no setup -> no captions', () => {
         expect(goalCaptions(null, 'en')).toEqual([null, null, null, null]);
-    });
-});
-
-describe('cardText', () => {
-    test('uses the edition text and its icon language, falling back to English', () => {
-        expect(cardText({ en: 'Birds that eat [seed]', de: '[seed] fressende Vögel' }, 'de')).toBe('Samen fressende Vögel');
-        expect(cardText({ en: 'Birds that eat [seed]', de: '[seed] fressende Vögel' }, 'en')).toBe('Birds that eat seed');
-        expect(cardText({ en: 'Birds that eat [seed]', de: null }, 'de')).toBe('Birds that eat seed');
-    });
-
-    test('turns HTML line breaks into newlines', () => {
-        expect(cardText({ en: 'Count birds.<br>Ground  nests <br/>count too', de: null }, 'en')).toBe('Count birds.\nGround nests\ncount too');
     });
 });

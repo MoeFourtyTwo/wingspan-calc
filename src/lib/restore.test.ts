@@ -92,13 +92,19 @@ describe('restoreGame: setup helper record', () => {
             { tileId: 'eu-row', side: 7 },
             { tileId: 'oc-beak', side: 1 },
         ],
-        bonus: { a: [1000, '1017', 'x'], ghost: [1001] },
+        bonus: { a: [1000] }, // left over from an older version
     };
 
-    test('keeps a valid record, normalises sides and drops unknown players / bad ids', () => {
+    test('keeps a valid record, normalises sides and drops unknown fields', () => {
         const s = restoreGame(game({ setup }))!;
-        expect(s.setup!.goals.map(g => g.side)).toEqual([1, 0, 0, 1]);
-        expect(s.setup!.bonus).toEqual({ a: [1000, 1017] });
+        expect(s.setup).toEqual({
+            goals: [
+                { tileId: 'core-forest', side: 1 },
+                { tileId: 'core-bowl', side: 0 },
+                { tileId: 'eu-row', side: 0 },
+                { tileId: 'oc-beak', side: 1 },
+            ],
+        });
     });
 
     test.each([undefined, null, 'x', { goals: [] }, { goals: [{ tileId: '' }, {}, {}, {}] }])(

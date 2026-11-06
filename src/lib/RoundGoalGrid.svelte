@@ -2,8 +2,6 @@
     import { gameStore, validateRoundGoalsRow } from "./store";
     import { ROUND_GOAL_POINTS } from "./rules/scoring";
     import { t, language } from "./i18n";
-    import { get } from "svelte/store";
-    import { sharedSetupPrefs } from "./setup/setupPrefs";
     import { goalCaptions } from "./setup/setupRecord";
     import Egg from "./ui/Egg.svelte";
     import { sendEgg, receiveEgg } from "./ui/placement";
@@ -21,9 +19,8 @@
     let players = $derived($gameStore.players);
     let active = $derived(players.find((p) => p.id === activePlayerId));
 
-    // Goals drawn with the setup helper, in the language of the cards on the table.
-    const setupPrefs = sharedSetupPrefs(get(language));
-    let captions = $derived(goalCaptions($gameStore.setup, $setupPrefs.edition));
+    // Goals drawn with the setup helper, shown as a caption per round.
+    let captions = $derived(goalCaptions($gameStore.setup, $language));
 
     function place(round: number, rank: number) {
         if (!activePlayerId) return;

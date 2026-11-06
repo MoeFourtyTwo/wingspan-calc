@@ -1,60 +1,36 @@
 /**
- * Glue between a drawn setup (full card objects) and the id-based
- * {@link SetupRecord} stored in the game, plus small pure helpers for the
- * setup helper screen.
+ * Glue between a drawn setup (tile objects) and the id-based record stored in
+ * the game, plus small pure helpers for the setup helper screen.
  */
-import { BONUS_CARDS } from '../data/bonusCards';
 import { GOAL_TILES } from '../data/goalTiles';
 import { renderTokens } from '../data/tokens';
-import { SETS, type CardSet, type Edition } from '../data/types';
-import { BONUS_CARDS_PER_PLAYER, ROUND_COUNT, type DrawnGoal, type SetupDraw } from './setupDraw';
+import { SETS, type CardSet, type Lang } from '../data/types';
+import { ROUND_COUNT, type DrawnGoal, type SetupDraw } from './setupDraw';
 
-/** Structural subset of the game store types, so this module stays store-agnostic. */
-interface PlayerLike {
-    id: string;
-}
+/** Structural copy of the store's SetupRecord, so this module stays store-agnostic. */
 export interface SetupRecordLike {
     goals: { tileId: string; side: 0 | 1 }[];
-    bonus: Record<string, number[]>;
 }
 
-/** Store a draw by ids. `players[i]` received `draw.bonus[i]`. */
-export function toRecord(draw: SetupDraw, players: readonly PlayerLike[]): SetupRecordLike {
-    return {
-        goals: draw.goals.map(g => ({ tileId: g.tile.id, side: g.side })),
-        bonus: Object.fromEntries(players.map((p, i) => [p.id, (draw.bonus[i] ?? []).map(c => c.id)])),
-    };
+export function toRecord(draw: SetupDraw): SetupRecordLike {
+    return { goals: draw.goals.map(g => ({ tileId: g.tile.id, side: g.side })) };
 }
 
-/**
- * Rebuild a draw from a stored record. Returns null if the record does not
- * fit (unknown tile, a player without the full hand of bonus cards, ...),
- * in which case the caller should simply draw again.
- */
-export function fromRecord(record: SetupRecordLike | null, players: readonly PlayerLike[]): SetupDraw | null {
-    if (!record || record.goals.length !== ROUND_COUNT || players.length === 0) return null;
+/** Rebuild a draw from a stored record; null if it does not fit (caller draws again). */
+export function fromRecord(record: SetupRecordLike | null): SetupDraw | null {
+    if (!record || record.goals.length !== ROUND_COUNT) return null;
     const goals: DrawnGoal[] = [];
     for (const g of record.goals) {
         const tile = GOAL_TILES.find(t => t.id === g.tileId);
         if (!tile) return null;
         goals.push({ tile, side: g.side === 1 ? 1 : 0 });
     }
-    const bonus = [];
-    for (const p of players) {
-        const ids = record.bonus[p.id] ?? [];
-        const cards = ids.map(id => BONUS_CARDS.find(c => c.id === id));
-        if (cards.length !== BONUS_CARDS_PER_PLAYER || cards.some(c => !c)) return null;
-        bonus.push(cards as NonNullable<(typeof cards)[number]>[]);
-    }
-    return { goals, bonus };
+    return { goals };
 }
 
 /** Turn one goal tile over. */
 export function flipGoal(draw: SetupDraw, round: number): SetupDraw {
-    return {
-        ...draw,
-        goals: draw.goals.map((g, i) => (i === round ? { ...g, side: (1 - g.side) as 0 | 1 } : g)),
-    };
+    return { goals: draw.goals.map((g, i) => (i === round ? { ...g, side: (1 - g.side) as 0 | 1 } : g)) };
 }
 
 /** Add the expansions the game options already say are in play (Oceania, Americas). */
@@ -71,26 +47,16 @@ export function toggleSet(sets: readonly CardSet[], set: CardSet): CardSet[] {
     return next.length ? SETS.filter(s => next.includes(s)) : [...sets];
 }
 
-/** Readable face-up goal text per round, e.g. ["Birds in forest", ...]; null if not drawn. */
-export function goalCaptions(record: SetupRecordLike | null, edition: Edition): (string | null)[] {
+/** Readable face-up goal text for one drawn goal. */
+export function goalText(goal: DrawnGoal, lang: Lang): string {
+    return renderTokens(goal.tile.sides[goal.side][lang], lang);
+}
+
+/** Face-up goal text per round, e.g. ["Birds in forest", ...]; null if not drawn. */
+export function goalCaptions(record: SetupRecordLike | null, lang: Lang): (string | null)[] {
     return Array.from({ length: ROUND_COUNT }, (_, i) => {
         const g = record?.goals[i];
         const tile = g && GOAL_TILES.find(t => t.id === g.tileId);
-        return tile ? renderTokens(tile.sides[g.side][edition], edition) : null;
+        return tile ? goalText({ tile, side: g.side }, lang) : null;
     });
-}
-
-/**
- * Card text for display: the edition's wording with icons rendered in the
- * language of the text actually shown (English fallback keeps English icons).
- */
-export function cardText(text: { en: string; de: string | null }, edition: Edition): string {
-    const lang: Edition = edition === 'de' && text.de ? 'de' : 'en';
-    // Some source texts contain HTML line breaks; turn them into real newlines
-    // (renderTokens collapses whitespace, so split around it).
-    return (lang === 'de' ? text.de! : text.en)
-        .split(/<br\s*\/?>/i)
-        .map(part => renderTokens(part, lang))
-        .filter(Boolean)
-        .join('\n');
 }
