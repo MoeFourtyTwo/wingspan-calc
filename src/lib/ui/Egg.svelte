@@ -1,24 +1,39 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
     let counter = 0;
 </script>
 
 <script lang="ts">
     import { inkFor, shade } from "./color";
 
-    /** Shell colour. */
-    export let color = "#f3efe6";
-    /** Width in px; height is 1.25 × width. */
-    export let size = 28;
-    /** Accessible name. When empty the egg is decorative. */
-    export let label = "";
-    /** Optional letter drawn on the shell. */
-    export let initial = "";
-    export let speckled = true;
-    let className = "";
-    export { className as class };
+    
+    
+    
+    
+    interface Props {
+        /** Shell colour. */
+        color?: string;
+        /** Width in px; height is 1.25 × width. */
+        size?: number;
+        /** Accessible name. When empty the egg is decorative. */
+        label?: string;
+        /** Optional letter drawn on the shell. */
+        initial?: string;
+        speckled?: boolean;
+        class?: string;
+    }
+
+    let {
+        color = "#f3efe6",
+        size = 28,
+        label = "",
+        initial = "",
+        speckled = true,
+        class: className = ""
+    }: Props = $props();
+    
 
     const gid = `egg-grad-${++counter}`;
-    $: ink = inkFor(color);
+    let ink = $derived(inkFor(color));
 </script>
 
 <svg

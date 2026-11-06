@@ -1,19 +1,35 @@
 <script lang="ts">
     import Egg from "./Egg.svelte";
     import Feather from "./Feather.svelte";
+    import { untrack } from "svelte";
     import { reducedMotion } from "./motion";
 
-    /** Burst origin inside the (positioned) parent. */
-    export let x = "50%";
-    export let y = "50%";
-    export let count = 22;
-    export let spread = 140;
-    export let duration = 1300;
-    export let colors: string[] = ["#2f7d6d", "#d9a72b", "#3b7fb6", "#c2554a", "#d8578a"];
-    /** Fraction of particles that are eggs (rest are feathers). */
-    export let eggRatio = 0.3;
+    
+    
+    interface Props {
+        /** Burst origin inside the (positioned) parent. */
+        x?: string;
+        y?: string;
+        count?: number;
+        spread?: number;
+        duration?: number;
+        colors?: string[];
+        /** Fraction of particles that are eggs (rest are feathers). */
+        eggRatio?: number;
+    }
 
-    const particles = reducedMotion()
+    let {
+        x = "50%",
+        y = "50%",
+        count = 22,
+        spread = 140,
+        duration = 1300,
+        colors = ["#2f7d6d", "#d9a72b", "#3b7fb6", "#c2554a", "#d8578a"],
+        eggRatio = 0.3
+    }: Props = $props();
+
+    // Particles are generated once per burst; later prop changes are ignored.
+    const particles = untrack(() => reducedMotion()
         ? []
         : Array.from({ length: count }, (_, i) => {
               const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
@@ -28,7 +44,7 @@
                   size: 24 + Math.random() * 20,
                   dur: duration * (0.75 + Math.random() * 0.5),
               };
-          });
+          }));
 </script>
 
 <div class="burst" style="left: {x}; top: {y}" aria-hidden="true">

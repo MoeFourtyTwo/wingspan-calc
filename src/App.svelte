@@ -13,18 +13,21 @@
 
     const ORDER: Phase[] = ["SETUP", "SELECTION", "SCORING", "RESULT", "STATS"];
 
-    $: phase = $gameStore.currentPhase;
+    let phase = $derived($gameStore.currentPhase);
 
     // Direction-aware page swoop: forward flies in from the right, back from the left.
+    // Plain variable on purpose: only `phase` should trigger the effect.
     let lastPhase: Phase = $gameStore.currentPhase;
-    let dir = 1;
-    $: if (phase !== lastPhase) {
-        dir = ORDER.indexOf(phase) >= ORDER.indexOf(lastPhase) ? 1 : -1;
-        lastPhase = phase;
-        window.scrollTo({ top: 0 });
-    }
+    let dir = $state(1);
+    $effect.pre(() => {
+        if (phase !== lastPhase) {
+            dir = ORDER.indexOf(phase) >= ORDER.indexOf(lastPhase) ? 1 : -1;
+            lastPhase = phase;
+            window.scrollTo({ top: 0 });
+        }
+    });
 
-    let hop = false;
+    let hop = $state(false);
     function birdHop() {
         hop = false;
         requestAnimationFrame(() => (hop = true));
@@ -42,8 +45,8 @@
         <button
             class="logo"
             class:hop
-            on:click={birdHop}
-            on:animationend={() => (hop = false)}
+            onclick={birdHop}
+            onanimationend={() => (hop = false)}
             aria-label={$t("appTitle")}
         >
             <Bird size={46} />

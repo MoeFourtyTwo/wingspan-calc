@@ -76,7 +76,7 @@ Jeder Spieler bekommt **1 Punkt pro passendem Element, höchstens 5 pro Runde**,
 
 - Nektar ist eine Futterart. Ausgegebener Nektar wird auf den Lebensraum gelegt, in dem er ausgegeben wurde: **Wald, Grasland oder Feuchtgebiet**.
 - Nicht ausgegebener Nektar verfällt am Ende jeder Runde.
-- Bei Spielende wird jeder Lebensraum einzeln gewertet: **meister Nektar 5 Punkte, zweitmeister Nektar 2 Punkte** (`NECTAR_POINTS`).
+- Bei Spielende wird jeder Lebensraum einzeln gewertet: **am meisten Nektar: 5 Punkte, am zweitmeisten: 2 Punkte** (`NECTAR_POINTS`).
 - Wer in einem Lebensraum keinen Nektar ausgegeben hat, bekommt dort keine Punkte.
 - Gleichstände werden wie bei den Rundenzielen behandelt:
   - zwei Spieler gleichauf auf Platz 1: (5 + 2) / 2, also je **3**, und es gibt keinen zweiten Platz;

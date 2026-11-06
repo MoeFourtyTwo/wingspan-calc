@@ -114,8 +114,66 @@ export function recompute(players: Player[], options: GameOptions): Player[] {
     });
 }
 
+const ACTIVE_GAME_KEY = 'wingspan_active_game';
+const PHASES: readonly Phase[] = ['SETUP', 'SELECTION', 'SCORING', 'RESULT', 'STATS'];
+
+/**
+ * Restore a game that was interrupted (reload, phone killed the tab, ...).
+ * Anything malformed is discarded; derived scores are recomputed.
+ */
+export function restoreGame(raw: unknown): GameState | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const g = raw as Partial<GameState>;
+    if (typeof g.gameId !== 'string' || !Array.isArray(g.players) || !PHASES.includes(g.currentPhase as Phase)) {
+        return null;
+    }
+    const options: GameOptions = { ...DEFAULT_OPTIONS, ...(g.options ?? {}) };
+    const players: Player[] = g.players
+        .filter((p): p is Player => !!p && typeof p.id === 'string' && typeof p.name === 'string')
+        .slice(0, MAX_PLAYERS)
+        .map(p => ({
+            id: p.id,
+            name: p.name,
+            color: typeof p.color === 'string' ? p.color : '#8FB8DE',
+            roundPlacements: Array.from({ length: ROUND_COUNT }, (_, i) => Number(p.roundPlacements?.[i]) || 0),
+            nectarPlacements: Array.from({ length: HABITATS.length }, (_, i) => Number(p.nectarPlacements?.[i]) || 0),
+            scores: Object.fromEntries(
+                CATEGORIES.map(c => [c, sanitizeCategoryPoints(c, p.scores?.[c] ?? 0)]),
+            ) as Scores,
+            total: 0,
+            leftoverFood: sanitizePoints(p.leftoverFood ?? 0),
+        }));
+    const maxIndex = Math.max(0, activeCategories(options).length - 1);
+    return {
+        gameId: g.gameId,
+        players: recompute(players, options),
+        currentPhase: players.length === 0 ? 'SETUP' : (g.currentPhase as Phase),
+        currentScoringCategoryIndex: Math.min(maxIndex, Math.max(0, Number(g.currentScoringCategoryIndex) || 0)),
+        startPlayerId: players.some(p => p.id === g.startPlayerId) ? g.startPlayerId! : null,
+        options,
+    };
+}
+
+function loadActiveGame(): GameState | null {
+    try {
+        const stored = globalThis.localStorage?.getItem(ACTIVE_GAME_KEY);
+        return stored ? restoreGame(JSON.parse(stored)) : null;
+    } catch {
+        return null;
+    }
+}
+
+function persistActiveGame(state: GameState) {
+    try {
+        globalThis.localStorage?.setItem(ACTIVE_GAME_KEY, JSON.stringify(state));
+    } catch {
+        /* storage unavailable or full – the game simply isn't resumable */
+    }
+}
+
 function createGameStore() {
-    const store = writable<GameState>(freshState());
+    const store = writable<GameState>(loadActiveGame() ?? freshState());
+    store.subscribe(persistActiveGame);
     const { subscribe, set, update } = store;
 
     const updatePlayers = (fn: (players: Player[], state: GameState) => Player[]) =>

@@ -6,15 +6,15 @@ const STORAGE_KEY = 'wingspan_language';
 
 function detectLanguage(): Language {
     try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'de') return stored;
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'en' || stored === 'de') return stored;
     } catch {
-    /* storage unavailable */
+        /* storage unavailable */
     }
     try {
-    if (navigator.language?.toLowerCase().startsWith('de')) return 'de';
+        if (navigator.language?.toLowerCase().startsWith('de')) return 'de';
     } catch {
-    /* navigator unavailable */
+        /* navigator unavailable */
     }
     return 'en';
 }
@@ -29,9 +29,9 @@ language.subscribe(lang => {
 export function setLanguage(lang: Language) {
     language.set(lang);
     try {
-    localStorage.setItem(STORAGE_KEY, lang);
+        localStorage.setItem(STORAGE_KEY, lang);
     } catch {
-    /* storage unavailable */
+        /* storage unavailable */
     }
 }
 
@@ -43,7 +43,6 @@ const en = {
     addPlayer: "Add Player",
     playerName: "Player Name",
     players: "Players",
-    noPlayers: "No players added yet.",
     startGame: "Start Game",
     // Categories
     round_goals: "Round Goals",
@@ -57,8 +56,8 @@ const en = {
     // Scoring
     selectPlayerPlace: "Select Player to Place:",
     resetGrid: "Reset Grid",
-    tapGrid: "Tap grid cells to place",
-    selectAbove: "Select a player above to start placing",
+    tapGrid: "Tap the cells to place",
+    selectAbove: "Pick a player above to start placing",
     // Grids
     round: "Round",
     biome: "Habitat",
@@ -77,10 +76,7 @@ const en = {
     newGame: "New Game",
     confirmNewGame: "Start a new game?",
     // Start Selection
-    whoStarts: "Who starts?",
-    randomize: "Randomize",
     start: "Start",
-    selectingFirst: "Selecting First Player...",
     firstSelected: "First Player Selected!",
     turnStartPre: "It's ",
     turnStartPost: "'s turn to start!",
@@ -88,22 +84,17 @@ const en = {
     pts: "pts",
     categoryTitle: "Category",
     total: "Total",
-    backToResults: "Back to Results",
     // Stats
-    statsTitle: "Statistics",
     scoreDistribution: "Score Distribution",
     avgScore: "Average Score",
-    maxScore: "Max Score",
-    minScore: "Min Score",
     recentPlayers: "Recent Players",
     clearHistory: "Clear History",
     // History
     history: "History",
-    noHistory: "No games played yet.",
     date: "Date",
     delete: "Delete",
     compareGroup: "Compare Group",
-    groupStats: "Group Stats vs Previous Games",
+    groupStats: "This group across all games",
     currentGame: "Current Game",
     selectGame: "Select Game",
     scoreBreakdown: "Score Breakdown",
@@ -111,7 +102,7 @@ const en = {
     totalWins: "Total Wins",
     accumulatedPoints: "Accumulated Points",
     totalAccumulated: "Total Accumulated",
-    statRate: "Rate",
+    statRate: "Win rate",
     statWins: "Wins",
     statAvg: "Avg",
     statHigh: "High",
@@ -169,14 +160,13 @@ const en = {
 type TranslationKey = keyof typeof en;
 
 const de: Record<TranslationKey, string> = {
-    appTitle: "Flügelschlag Rechner",
+    appTitle: "Flügelschlag-Rechner",
     back: "Zurück",
     next: "Weiter",
     // Setup
     addPlayer: "Spieler hinzufügen",
     playerName: "Spielername",
     players: "Spieler",
-    noPlayers: "Noch keine Spieler.",
     startGame: "Spiel starten",
     // Categories
     round_goals: "Rundenziele",
@@ -188,10 +178,10 @@ const de: Record<TranslationKey, string> = {
     eggs: "Eier",
     food: "Gelagertes Futter",
     // Scoring
-    selectPlayerPlace: "Spieler platzieren:",
+    selectPlayerPlace: "Wen platzierst du?",
     resetGrid: "Zurücksetzen",
-    tapGrid: "Tippe zum Platzieren für",
-    selectAbove: "Wähle einen Spieler zum Platzieren",
+    tapGrid: "Tippe auf die Felder für",
+    selectAbove: "Wähle oben eine Person aus, um sie zu platzieren.",
     // Grids
     round: "Runde",
     biome: "Lebensraum",
@@ -201,50 +191,42 @@ const de: Record<TranslationKey, string> = {
     rank1: "1.",
     rank2: "2.",
     rank3: "3.",
-    none: "Ohne",
+    none: "Keine",
     // Result
-    winner: "Gewinner",
+    winner: "Sieg!",
     leaderboard: "Rangliste",
     adjustScores: "Punkte korrigieren",
-    viewStats: "Statistiken",
+    viewStats: "Zur Statistik",
     newGame: "Neues Spiel",
     confirmNewGame: "Neues Spiel starten?",
     // Start Selection
-    whoStarts: "Wer beginnt?",
-    randomize: "Zufällig",
     start: "Start",
-    selectingFirst: "Wähle Startspieler...",
-    firstSelected: "Startspieler ausgewählt!",
+    firstSelected: "Der Startspieler steht fest!",
     turnStartPre: "",
     turnStartPost: " beginnt!",
-    finishScoring: "Abschließen",
+    finishScoring: "Wertung abschließen",
     pts: "Pkt.",
     categoryTitle: "Kategorie",
     total: "Gesamt",
-    backToResults: "Zurück zu Ergebnissen",
     // Stats
-    statsTitle: "Statistiken",
     scoreDistribution: "Punkteverteilung",
     avgScore: "Durchschnitt",
-    maxScore: "Max",
-    minScore: "Min",
-    recentPlayers: "Letzte Spieler",
-    clearHistory: "Verlauf löschen",
+    recentPlayers: "Zuletzt dabei",
+    clearHistory: "Liste leeren",
     // History
     history: "Verlauf",
-    noHistory: "Noch keine Spiele.",
     date: "Datum",
     delete: "Löschen",
-    compareGroup: "Gruppe vergleichen",
-    groupStats: "Gruppenstatistik vs Vorherige",
-    currentGame: "Aktuelles Spiel",
-    selectGame: "Spiel wählen",
+    compareGroup: "Diese Gruppe vergleichen",
+    groupStats: "Diese Gruppe über alle Partien",
+    currentGame: "Aktuelle Partie",
+    selectGame: "Partie wählen",
     scoreBreakdown: "Punkteübersicht",
-    historyTrend: "Verlaufstrend",
+    historyTrend: "Punkte im Verlauf",
     totalWins: "Siege gesamt",
-    accumulatedPoints: "Akkumulierte Punkte",
-    totalAccumulated: "Gesamt akkumuliert",
-    statRate: "Rate",
+    accumulatedPoints: "Punkte insgesamt",
+    totalAccumulated: "Summe aller Partien",
+    statRate: "Siegquote",
     statWins: "Siege",
     statAvg: "Ø",
     statHigh: "Max",
@@ -253,18 +235,18 @@ const de: Record<TranslationKey, string> = {
     switchLanguage: "Sprache wechseln",
     gameOptions: "Spieloptionen",
     oceania: "Ozeanien-Erweiterung (Nektar)",
-    oceaniaHint: "Nektar-Mehrheiten je Lebensraum werten",
-    americas: "Amerika-Erweiterung (Kolibris)",
-    americasHint: "Mittel- und Südamerika: Kolibri-Leiste werten",
-    roundGoalSide: "Rundenziel-Tableau",
-    competitive: "Grün · Wettkampf",
-    competitiveHint: "1. / 2. / 3. Platz je Runde",
-    casual: "Blau · entspannt",
-    casualHint: "1 Punkt pro Objekt, max. 5 je Runde",
-    maxPlayersReached: "Das Nest ist voll – höchstens {n} Spieler.",
+    oceaniaHint: "Nektar-Mehrheiten je Lebensraum mitwerten",
+    americas: "Mittel- und Südamerika (Kolibris)",
+    americasHint: "Kolibri-Leiste mitwerten",
+    roundGoalSide: "Zieltafel",
+    competitive: "Grüne Seite · mit Wettbewerb",
+    competitiveHint: "Punkte für Platz 1, 2 und 3 je Runde",
+    casual: "Blaue Seite · ohne Wettbewerb",
+    casualHint: "1 Punkt je passendem Element, max. 5 pro Runde",
+    maxPlayersReached: "Das Nest ist voll – maximal {n} Personen.",
     removePlayerNamed: "{name} entfernen",
-    eggColor: "Eierfarbe {n}",
-    nestEmpty: "Das Nest ist leer – füge den ersten Spieler hinzu!",
+    eggColor: "Eifarbe {n}",
+    nestEmpty: "Das Nest ist noch leer – wer spielt mit?",
     skip: "Überspringen",
     tapToSkip: "Tippen zum Überspringen",
     letsGo: "Los geht's!",
@@ -272,30 +254,30 @@ const de: Record<TranslationKey, string> = {
     progressLabel: "Kategorie {i} von {n}",
     plusOne: "Ein Punkt mehr für {name}",
     minusOne: "Ein Punkt weniger für {name}",
-    toggleSign: "Vorzeichen wechseln für {name}",
+    toggleSign: "Vorzeichen für {name} umkehren",
     pointsFor: "Punkte für {name}",
-    invalidRows: "Einige Platzierungen passen nicht – prüfe die Gleichstände.",
+    invalidRows: "Diese Platzierungen sind so nicht möglich – bitte Gleichstände prüfen.",
     placeIn: "{name} platzieren: {row}, {rank}",
-    hint_birds: "Punkte auf deinen Vogelkarten",
-    hint_bonus: "Punkte deiner Bonuskarten",
-    hint_round_goals: "Platziere alle Spieler in jeder Runde",
-    hint_round_goals_casual: "1 Punkt pro Objekt, max. 5 je Runde (max. 20)",
-    hint_eggs: "1 Punkt pro Ei auf deinen Vögeln",
-    hint_food: "1 Punkt pro gelagertem Nahrungsplättchen",
-    hint_tucked: "1 Punkt pro Karte unter deinen Vögeln",
-    hint_nectar: "Meister Nektar je Lebensraum: 5 bzw. 2 Punkte",
-    hint_hummingbirds: "Summe der Werte neben deinen 5 Markern – auch negativ möglich",
-    revealing: "Und es gewinnt …",
+    hint_birds: "Summe der Punkte auf den ausgespielten Vogelkarten",
+    hint_bonus: "Punkte aus allen Bonuskarten",
+    hint_round_goals: "Für jede Runde die Platzierung auf der Zieltafel eintragen",
+    hint_round_goals_casual: "1 Punkt je passendem Element, max. 5 pro Runde (insgesamt max. 20)",
+    hint_eggs: "1 Punkt je Ei auf den Vogelkarten",
+    hint_food: "1 Punkt je Futtermarker auf den Vogelkarten",
+    hint_tucked: "1 Punkt je Karte, die unter einem Vogel steckt",
+    hint_nectar: "Je Lebensraum: am meisten Nektar 5 Punkte, am zweitmeisten 2 Punkte",
+    hint_hummingbirds: "Summe der Werte neben den 5 Markern – kann auch negativ sein",
+    revealing: "Und der Sieg geht an …",
     sharedVictory: "Geteilter Sieg!",
-    tieBreakerTitle: "Gleichstand! Wer hat mehr Nahrung übrig?",
-    tieBreakerHint: "Gib die unbenutzten Nahrungsplättchen im Vorrat der gleichauf liegenden Spieler ein.",
-    foodTokens: "Nahrung",
-    stillTied: "Immer noch gleichauf – der Sieg wird geteilt.",
+    tieBreakerTitle: "Gleichstand! Wer hat mehr Futter übrig?",
+    tieBreakerHint: "Trage für alle Punktgleichen die ungenutzten Futtermarker in ihrem Vorrat ein.",
+    foodTokens: "Futtermarker",
+    stillTied: "Weiterhin gleichauf – der Sieg wird geteilt.",
     noGameData: "Keine Spieldaten vorhanden.",
     startNewGame: "Neues Spiel starten",
-    noHistoryYet: "Noch kein Verlauf",
-    noGroupHistory: "Kein Verlauf für genau diese Gruppe.",
-    games: "Spiele",
+    noHistoryYet: "Noch keine Partien gespeichert",
+    noGroupHistory: "Für genau diese Gruppe gibt es noch keine Partien.",
+    games: "Partien",
     home: "Startseite",
 };
 
@@ -306,8 +288,8 @@ export type { TranslationKey };
 /** Translate a key, replacing `{placeholders}` with the given values. */
 export const t = derived(language, $language => {
     return (key: TranslationKey, vars?: Record<string, string | number>) => {
-    let val = translations[$language][key] ?? key;
-    if (vars) for (const [k, v] of Object.entries(vars)) val = val.replaceAll(`{${k}}`, String(v));
-    return val;
+        let val = translations[$language][key] ?? key;
+        if (vars) for (const [k, v] of Object.entries(vars)) val = val.replaceAll(`{${k}}`, String(v));
+        return val;
     };
 });

@@ -19,19 +19,19 @@
         "#4a4e69", // black
     ];
 
-    let newName = "";
-    let selectedColor = colors[0];
+    let newName = $state("");
+    let selectedColor = $state(colors[0]);
 
     interface RecentPlayer {
         name: string;
         color: string;
     }
 
-    let recentPlayers: RecentPlayer[] = [];
+    let recentPlayers: RecentPlayer[] = $state([]);
 
-    $: players = $gameStore.players;
-    $: options = $gameStore.options;
-    $: isFull = players.length >= MAX_PLAYERS;
+    let players = $derived($gameStore.players);
+    let options = $derived($gameStore.options);
+    let isFull = $derived(players.length >= MAX_PLAYERS);
 
     onMount(() => {
         try {
@@ -108,7 +108,7 @@
     <div class="toolbar">
         <button
             class="btn-ghost"
-            on:click={() => gameStore.setPhase("STATS")}
+            onclick={() => gameStore.setPhase("STATS")}
             aria-label={$t("history")}
         >
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -132,7 +132,7 @@
                 maxlength="20"
                 bind:value={newName}
                 disabled={isFull}
-                on:keydown={(e) => e.key === "Enter" && handleAddPlayer()}
+                onkeydown={(e) => e.key === "Enter" && handleAddPlayer()}
             />
         </div>
 
@@ -146,7 +146,7 @@
                     role="radio"
                     aria-checked={selectedColor === color}
                     aria-label={$t("eggColor", { n: i + 1 })}
-                    on:click={() => (selectedColor = color)}
+                    onclick={() => (selectedColor = color)}
                 >
                     <Egg {color} size={26} />
                 </button>
@@ -157,14 +157,14 @@
             <div class="recent" transition:slide|local={{ duration: ms(220) }}>
                 <div class="recent-header">
                     <span class="label-hand">{$t("recentPlayers")}</span>
-                    <button class="text-btn" on:click={clearRecent}>{$t("clearHistory")}</button>
+                    <button class="text-btn" onclick={clearRecent}>{$t("clearHistory")}</button>
                 </div>
                 <div class="chips">
                     {#each recentPlayers as p, i}
                         <button
                             class="chip"
                             in:swoop={{ y: 10, delay: 30 * i, duration: 300 }}
-                            on:click={() => addRecentPlayer(p)}
+                            onclick={() => addRecentPlayer(p)}
                             disabled={isFull || players.some((gp) => gp.name === p.name)}
                         >
                             <Egg color={p.color} size={14} speckled={false} />
@@ -175,7 +175,7 @@
             </div>
         {/if}
 
-        <button class="btn-primary add-btn" on:click={handleAddPlayer} disabled={!newName.trim() || isFull}>
+        <button class="btn-primary add-btn" onclick={handleAddPlayer} disabled={!newName.trim() || isFull}>
             <span aria-hidden="true">+</span>
             {$t("addPlayer")}
         </button>
@@ -214,7 +214,7 @@
                         <span class="player-name">{player.name}</span>
                         <button
                             class="icon-btn remove"
-                            on:click={() => gameStore.removePlayer(player.id)}
+                            onclick={() => gameStore.removePlayer(player.id)}
                             aria-label={$t("removePlayerNamed", { name: player.name })}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -241,7 +241,7 @@
                 type="checkbox"
                 class="switch"
                 checked={options.oceania}
-                on:change={(e) => gameStore.setOptions({ oceania: e.currentTarget.checked })}
+                onchange={(e) => gameStore.setOptions({ oceania: e.currentTarget.checked })}
             />
         </label>
 
@@ -255,7 +255,7 @@
                 type="checkbox"
                 class="switch"
                 checked={options.americas}
-                on:change={(e) => gameStore.setOptions({ americas: e.currentTarget.checked })}
+                onchange={(e) => gameStore.setOptions({ americas: e.currentTarget.checked })}
             />
         </label>
 
@@ -266,7 +266,7 @@
                     class="seg green"
                     class:active={options.roundGoalMode === "competitive"}
                     aria-pressed={options.roundGoalMode === "competitive"}
-                    on:click={() => setMode("competitive")}
+                    onclick={() => setMode("competitive")}
                 >
                     <span class="seg-title">{$t("competitive")}</span>
                     <span class="seg-hint">{$t("competitiveHint")}</span>
@@ -275,7 +275,7 @@
                     class="seg blue"
                     class:active={options.roundGoalMode === "casual"}
                     aria-pressed={options.roundGoalMode === "casual"}
-                    on:click={() => setMode("casual")}
+                    onclick={() => setMode("casual")}
                 >
                     <span class="seg-title">{$t("casual")}</span>
                     <span class="seg-hint">{$t("casualHint")}</span>
@@ -285,7 +285,7 @@
     </section>
 
     <div class="actions">
-        <button class="btn-primary start-btn" disabled={players.length < 1} on:click={startGame}>
+        <button class="btn-primary start-btn" disabled={players.length < 1} onclick={startGame}>
             {$t("startGame")}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 12h13M13 6l6 6-6 6" />

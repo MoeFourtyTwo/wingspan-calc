@@ -1,7 +1,7 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
     import type { Category } from "../rules/scoring";
 
-    /** Habitat-inspired accent colour per scoring category. */
+    
     export const CATEGORY_COLORS: Record<Category, string> = {
         birds: "#3b7fb6",
         bonus: "#d9a72b",
@@ -15,10 +15,15 @@
 </script>
 
 <script lang="ts">
-    export let category: Category;
-    export let size = 28;
+    interface Props {
+        /** Habitat-inspired accent colour per scoring category. */
+        category: Category;
+        size?: number;
+    }
 
-    $: c = CATEGORY_COLORS[category];
+    let { category, size = 28 }: Props = $props();
+
+    let c = $derived(CATEGORY_COLORS[category]);
 </script>
 
 <svg

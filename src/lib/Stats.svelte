@@ -3,14 +3,14 @@
     import { historyStore, type GameRecord } from "./historyStore";
     import { t } from "./i18n";
     import { slide } from "svelte/transition";
-    import { tick, onDestroy } from "svelte";
+    import { tick, onDestroy, untrack } from "svelte";
     import Chart from "chart.js/auto";
     import Egg from "./ui/Egg.svelte";
     import { CATEGORY_COLORS } from "./ui/CategoryIcon.svelte";
 
-    let selectedGameId: string | null = null;
-    let comparisonGroup: string[] | null = null;
-    let showHistorySelector = false;
+    let selectedGameId: string | null = $state(null);
+    let comparisonGroup: string[] | null = $state(null);
+    let showHistorySelector = $state(false);
 
     // Chart Instances
     let historyChartInstance: Chart | null = null;
@@ -18,9 +18,9 @@
     let winnersChartInstance: Chart | null = null;
 
     // Canvas Elements
-    let historyCanvas: HTMLCanvasElement;
-    let distributionCanvas: HTMLCanvasElement;
-    let winnersCanvas: HTMLCanvasElement;
+    let historyCanvas: HTMLCanvasElement | undefined = $state();
+    let distributionCanvas: HTMLCanvasElement | undefined = $state();
+    let winnersCanvas: HTMLCanvasElement | undefined = $state();
 
     // Derived stats for comparison
     let groupStats: {
@@ -30,70 +30,18 @@
         highScore: Record<string, number>;
         history: { date: string; scores: Record<string, number> }[];
         accumulated: Record<string, Record<string, number>>; // player -> { category: total }
-    } | null = null;
+    } | null = $state.raw(null);
 
-    // Normalize current game
-    $: currentGameRecord = {
-        id: $gameStore.gameId,
-        date: new Date().toISOString(),
-        startPlayerName:
-            $gameStore.players.find((p) => p.id === $gameStore.startPlayerId)
-                ?.name || "",
-        players: $gameStore.players.map((p) => ({
-            name: p.name,
-            total: p.total,
-            scores: p.scores,
-            winner: false,
-            color: p.color,
-        })),
-    };
 
-    // Default Selection Logic
-    $: {
-        if (
-            !selectedGameId &&
-            $gameStore.players.length === 0 &&
-            $historyStore.length > 0
-        ) {
-            selectedGameId = $historyStore[0].id; // Default to historical
-        }
-    }
 
-    // Determine which game to display
-    $: displayedGame = selectedGameId
-        ? $historyStore.find((g) => g.id === selectedGameId) ||
-          currentGameRecord
-        : currentGameRecord;
 
-    $: players = [...(displayedGame?.players || [])].sort(
-        (a, b) => b.total - a.total,
-    );
 
-    // Reactive Chart Updates
-    $: {
-        $t;
-        if (groupStats && historyCanvas) renderHistoryChart();
-    }
 
-    $: {
-        $t;
-        if (groupStats && winnersCanvas) renderWinnersChart();
-    }
 
-    $: {
-        $t;
-        if (displayedGame && distributionCanvas) renderDistributionChart();
-    }
 
     /** Old history records may lack newer categories (e.g. hummingbirds). */
     const score = (scores: Partial<Record<Category, number>>, cat: Category) => scores?.[cat] ?? 0;
 
-    /** Expansion categories are only listed when someone actually scored there. */
-    $: shownCategories = CATEGORIES.filter(
-        (cat) =>
-            (cat !== "nectar" && cat !== "hummingbirds") ||
-            (displayedGame?.players ?? []).some((p) => score(p.scores, cat) !== 0),
-    );
 
     // Helpers
     function formatDate(iso: string) {
@@ -340,19 +288,73 @@
         if (winnersChartInstance) winnersChartInstance.destroy();
         if (distributionChartInstance) distributionChartInstance.destroy();
     });
+    // Normalize current game
+    let currentGameRecord = $derived({
+        id: $gameStore.gameId,
+        date: new Date().toISOString(),
+        startPlayerName:
+            $gameStore.players.find((p) => p.id === $gameStore.startPlayerId)
+                ?.name || "",
+        players: $gameStore.players.map((p) => ({
+            name: p.name,
+            total: p.total,
+            scores: p.scores,
+            winner: false,
+            color: p.color,
+        })),
+    });
+    // Default Selection Logic
+    $effect.pre(() => {
+        if (
+            !selectedGameId &&
+            $gameStore.players.length === 0 &&
+            $historyStore.length > 0
+        ) {
+            selectedGameId = $historyStore[0].id; // Default to historical
+        }
+    });
+    // Determine which game to display
+    let displayedGame = $derived(selectedGameId
+        ? $historyStore.find((g) => g.id === selectedGameId) ||
+          currentGameRecord
+        : currentGameRecord);
+    let players = $derived([...(displayedGame?.players || [])].sort(
+        (a, b) => b.total - a.total,
+    ));
+    // Reactive Chart Updates
+    // Charts are rebuilt when their inputs or the language change. Rendering
+    // runs untracked so Chart.js internals never feed back into the effect.
+    $effect(() => {
+        void $t;
+        if (groupStats && historyCanvas) untrack(renderHistoryChart);
+    });
+    $effect(() => {
+        void $t;
+        if (groupStats && winnersCanvas) untrack(renderWinnersChart);
+    });
+    $effect(() => {
+        void $t;
+        if (displayedGame && distributionCanvas) untrack(renderDistributionChart);
+    });
+    /** Expansion categories are only listed when someone actually scored there. */
+    let shownCategories = $derived(CATEGORIES.filter(
+        (cat) =>
+            (cat !== "nectar" && cat !== "hummingbirds") ||
+            (displayedGame?.players ?? []).some((p) => score(p.scores, cat) !== 0),
+    ));
 </script>
 
 <div class="stats-container">
     <!-- Header with Game Selector -->
     <div class="header">
-        <button class="btn-secondary back-btn" on:click={goHome} aria-label={$t("home")}>
+        <button class="btn-secondary back-btn" onclick={goHome} aria-label={$t("home")}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
         </button>
 
         <div class="selector-container">
             <button
                 class="selector-btn"
-                on:click={() => (showHistorySelector = !showHistorySelector)}
+                onclick={() => (showHistorySelector = !showHistorySelector)}
             >
                 {selectedGameId
                     ? formatDate(displayedGame.date)
@@ -368,7 +370,7 @@
                         {#if $gameStore.players.length > 0}
                             <button
                                 class:active={!selectedGameId}
-                                on:click={() => selectGame(null)}
+                                onclick={() => selectGame(null)}
                             >
                                 {$t("currentGame")}
                             </button>
@@ -376,7 +378,7 @@
                         {#each $historyStore as game}
                             <button
                                 class:active={selectedGameId === game.id}
-                                on:click={() => selectGame(game.id)}
+                                onclick={() => selectGame(game.id)}
                             >
                                 {formatDate(game.date)} - {game.players.find(
                                     (p) => p.winner,
@@ -394,7 +396,7 @@
             {#if selectedGameId}
                 <button
                     class="icon-btn"
-                    on:click={deleteCurrentGame}
+                    onclick={deleteCurrentGame}
                     aria-label={$t("delete")}
                     title={$t("delete")}
                     ><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg></button
@@ -409,7 +411,7 @@
             <div class="card comparison-card">
                 <div class="comp-header">
                     <h3>{$t("groupStats")} ({groupStats.games} {$t("games")})</h3>
-                    <button class="icon-btn" on:click={closeComparison} aria-label={$t("back")}
+                    <button class="icon-btn" onclick={closeComparison} aria-label={$t("back")}
                         >✕</button
                     >
                 </div>
@@ -515,7 +517,7 @@
             <div class="card-header-row">
                 <h3>{$t("scoreBreakdown")}</h3>
                 {#if selectedGameId && !comparisonGroup}
-                    <button class="text-btn" on:click={openComparison}
+                    <button class="text-btn" onclick={openComparison}
                         >{$t("compareGroup")}</button
                     >
                 {/if}
@@ -568,7 +570,7 @@
     {:else}
         <div class="empty-state">
             <p>{$t("noGameData")}</p>
-            <button class="btn-primary" on:click={goHome}>{$t("startNewGame")}</button>
+            <button class="btn-primary" onclick={goHome}>{$t("startNewGame")}</button>
         </div>
     {/if}
 </div>

@@ -1,27 +1,43 @@
 <script lang="ts">
-    import { tweened } from "svelte/motion";
+    import { untrack } from "svelte";
+    import { Tween } from "svelte/motion";
     import { cubicOut } from "svelte/easing";
     import { ms } from "./motion";
 
-    export let value = 0;
-    export let duration = 450;
-    export let delay = 0;
-    /** Count up from 0 when first shown. */
-    export let fromZero = false;
-
-    const n = tweened(fromZero ? 0 : value, { duration: ms(duration), easing: cubicOut });
-    $: n.set(value, { delay: ms(delay) });
-
-    let prev = value;
-    let bumpKey = 0;
-    $: if (value !== prev) {
-        prev = value;
-        bumpKey++;
+    
+    interface Props {
+        value?: number;
+        duration?: number;
+        delay?: number;
+        /** Count up from 0 when first shown. */
+        fromZero?: boolean;
     }
+
+    let {
+        value = 0,
+        duration = 450,
+        delay = 0,
+        fromZero = false
+    }: Props = $props();
+
+    const n = untrack(() => new Tween(fromZero ? 0 : value, { duration: ms(duration), easing: cubicOut }));
+    $effect.pre(() => {
+        n.set(value, { delay: ms(untrack(() => delay)) });
+    });
+
+    // Re-keyed on every change so the "pop" animation replays.
+    let prev = untrack(() => value);
+    let bumpKey = $state(0);
+    $effect.pre(() => {
+        if (value !== prev) {
+            prev = value;
+            untrack(() => bumpKey++);
+        }
+    });
 </script>
 
 {#key bumpKey}
-    <span class="num" class:bump={bumpKey > 0}>{Math.round($n)}</span>
+    <span class="num" class:bump={bumpKey > 0}>{Math.round(n.current)}</span>
 {/key}
 
 <style>
