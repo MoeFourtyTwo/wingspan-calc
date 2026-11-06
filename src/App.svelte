@@ -11,7 +11,7 @@
     import Feather from "./lib/ui/Feather.svelte";
     import { swoop } from "./lib/ui/motion";
 
-    const ORDER: Phase[] = ["SETUP", "SELECTION", "SCORING", "RESULT", "STATS"];
+    const ORDER: Phase[] = ["SETUP", "SELECTION", "DRAW", "SCORING", "RESULT", "STATS"];
 
     let phase = $derived($gameStore.currentPhase);
 

@@ -17,11 +17,40 @@
     import CategoryIcon, { CATEGORY_COLORS } from "./ui/CategoryIcon.svelte";
     import TweenedNumber from "./ui/TweenedNumber.svelte";
     import { swoop, pop } from "./ui/motion";
+    import QuickSumSheet from "./quicksum/QuickSumSheet.svelte";
 
     const CASUAL_MAX = CASUAL_ROUND_GOAL_MAX * ROUND_COUNT;
 
     let activePlayerId: string | null = $state(null);
     let inputElements: Record<string, HTMLInputElement> = $state({});
+
+    // ---- Quick sum (tally pad) ----
+    let quickSumPlayerId: string | null = $state(null);
+    let quickSumButtons: Record<string, HTMLButtonElement> = $state({});
+
+    function openQuickSum(playerId: string) {
+        quickSumPlayerId = playerId;
+    }
+
+    function closeQuickSum(focusId = quickSumPlayerId) {
+        quickSumPlayerId = null;
+        if (focusId) tick().then(() => quickSumButtons[focusId]?.focus({ preventScroll: true }));
+    }
+
+    function applyQuickSum(total: number, goNext: boolean) {
+        const id = quickSumPlayerId;
+        if (!id) return;
+        setScore(id, total);
+        bounce(id);
+        const next = goNext ? nextPlayerId(id) : undefined;
+        if (next) quickSumPlayerId = next;
+        else closeQuickSum(id);
+    }
+
+    function nextPlayerId(id: string): string | undefined {
+        const ids = players.map((p) => p.id);
+        return ids[ids.indexOf(id) + 1];
+    }
 
 
     // Direction-aware header/content swoop.
@@ -30,6 +59,7 @@
     let dir = $state(1);
 
     function onCategoryChange() {
+        quickSumPlayerId = null;
         if (isPlacementCategory) {
             if (!players.some((p) => p.id === activePlayerId)) activePlayerId = players[0]?.id ?? null;
             return;
@@ -128,6 +158,8 @@
         return true;
     })());
     let activePlayer = $derived(players.find((p) => p.id === activePlayerId));
+    let quickSumPlayer = $derived(players.find((p) => p.id === quickSumPlayerId));
+    let quickSumNext = $derived(quickSumPlayerId ? players.find((p) => p.id === nextPlayerId(quickSumPlayerId!)) : undefined);
 </script>
 
 <div class="scoring">
@@ -278,12 +310,38 @@
                                 disabled={maxValue !== undefined && value >= maxValue}
                                 aria-label={$t("plusOne", { name: player.name })}
                             >+</button>
+                            <button
+                                bind:this={quickSumButtons[player.id]}
+                                class="step quick-sum"
+                                style="--c: {color(currentCategory)}"
+                                onclick={() => openQuickSum(player.id)}
+                                aria-label={$t("quickSumFor", { category: $t(currentCategory), name: player.name })}
+                                aria-haspopup="dialog"
+                                title={$t("quickSum")}
+                            >
+                                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="2.5" width="16" height="19" rx="3.5" />
+                                    <rect x="7.5" y="5.5" width="9" height="4" rx="1" />
+                                    <path d="M8 13.5h.01M12 13.5h.01M16 13.5h.01M8 17.5h.01M12 17.5h.01M16 13.5v4" stroke-width="2.8" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 {/each}
             {/if}
         </div>
     {/key}
+
+    {#if quickSumPlayer && !isPlacementCategory}
+        <QuickSumSheet
+            player={quickSumPlayer}
+            initial={quickSumPlayer.scores[currentCategory] ?? 0}
+            category={currentCategory}
+            nextName={quickSumNext?.name}
+            onapply={applyQuickSum}
+            oncancel={() => closeQuickSum()}
+        />
+    {/if}
 
     <div class="actions">
         <button class="btn-primary next-btn" class:gold={isLastCategory} onclick={() => gameStore.nextCategory()} disabled={!isCurrentCategoryValid}>
@@ -491,6 +549,20 @@
 
     .step:active:not(:disabled) {
         transform: scale(0.85);
+    }
+
+    .step.quick-sum {
+        width: 44px;
+        height: 44px;
+        margin-left: 4px;
+        color: color-mix(in srgb, var(--c) 70%, var(--ink));
+        background: color-mix(in srgb, var(--c) 14%, var(--card));
+        border-color: color-mix(in srgb, var(--c) 45%, transparent);
+        box-shadow: 0 2px 0 color-mix(in srgb, var(--c) 35%, transparent);
+    }
+
+    .step.quick-sum:hover {
+        animation: wiggle 0.45s ease;
     }
 
     .step:disabled {
