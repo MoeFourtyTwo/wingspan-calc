@@ -5,6 +5,7 @@ import {
     MAX_PLAYERS,
     ROUND_COUNT,
     emptyScores,
+    sanitizeCategoryPoints,
     sanitizePoints,
     scoreNectar,
     scoreRoundGoals,
@@ -27,6 +28,8 @@ export interface GameOptions {
     roundGoalMode: RoundGoalMode;
     /** Oceania expansion: enables nectar scoring. */
     oceania: boolean;
+    /** Americas expansion: enables hummingbird track scoring. */
+    americas: boolean;
 }
 
 export interface Player {
@@ -53,7 +56,7 @@ export interface GameState {
     options: GameOptions;
 }
 
-export const DEFAULT_OPTIONS: GameOptions = { roundGoalMode: 'competitive', oceania: true };
+export const DEFAULT_OPTIONS: GameOptions = { roundGoalMode: 'competitive', oceania: true, americas: false };
 
 function freshState(options: GameOptions = DEFAULT_OPTIONS): GameState {
     return {
@@ -68,7 +71,9 @@ function freshState(options: GameOptions = DEFAULT_OPTIONS): GameState {
 
 /** Categories that are scored in a game with the given options. */
 export function activeCategories(options: GameOptions): Category[] {
-    return CATEGORIES.filter(c => c !== 'nectar' || options.oceania);
+    return CATEGORIES.filter(
+        c => (c !== 'nectar' || options.oceania) && (c !== 'hummingbirds' || options.americas),
+    );
 }
 
 /** Whether a category is entered via a placement grid instead of a number. */
@@ -104,6 +109,7 @@ export function recompute(players: Player[], options: GameOptions): Player[] {
         const scores: Scores = { ...p.scores };
         if (round) scores.round_goals = round[i];
         scores.nectar = nectar ? nectar[i] : 0;
+        if (!options.americas) scores.hummingbirds = 0;
         return { ...p, scores, total: sumScores(scores) };
     });
 }
@@ -148,7 +154,7 @@ function createGameStore() {
         updateScore: (playerId: string, category: Category, points: number) =>
             updatePlayers(players =>
                 players.map(p =>
-                    p.id === playerId ? { ...p, scores: { ...p.scores, [category]: sanitizePoints(points) } } : p,
+                    p.id === playerId ? { ...p, scores: { ...p.scores, [category]: sanitizeCategoryPoints(category, points) } } : p,
                 ),
             ),
 

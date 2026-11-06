@@ -15,10 +15,17 @@ export const CATEGORIES = [
     'food',
     'tucked',
     'nectar',
+    'hummingbirds',
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 export type Scores = Record<Category, number>;
+
+/**
+ * Categories that may be negative. The Americas expansion hummingbird track
+ * has negative values at its low end, so its end-game sum can be below zero.
+ */
+export const SIGNED_CATEGORIES: readonly Category[] = ['hummingbirds'];
 
 /** Categories whose points are derived from a placement grid, not typed in. */
 export const PLACEMENT_CATEGORIES: readonly Category[] = ['round_goals', 'nectar'];
@@ -55,7 +62,7 @@ export const NECTAR_POINTS: readonly number[] = [5, 2];
 export type Placement = number;
 
 export function emptyScores(): Scores {
-    return { birds: 0, bonus: 0, round_goals: 0, eggs: 0, food: 0, tucked: 0, nectar: 0 };
+    return { birds: 0, bonus: 0, round_goals: 0, eggs: 0, food: 0, tucked: 0, nectar: 0, hummingbirds: 0 };
 }
 
 /** Clamp an arbitrary user input to a non-negative integer. */
@@ -63,6 +70,18 @@ export function sanitizePoints(value: unknown): number {
     const n = typeof value === 'number' ? value : Number(value);
     if (!Number.isFinite(n) || n <= 0) return 0;
     return Math.floor(n);
+}
+
+/** Clamp user input to an integer (truncated toward zero), allowing negatives. */
+export function sanitizeSignedPoints(value: unknown): number {
+    const n = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.trunc(n) || 0;
+}
+
+/** Sanitize a category value according to whether it may be negative. */
+export function sanitizeCategoryPoints(category: Category, value: unknown): number {
+    return SIGNED_CATEGORIES.includes(category) ? sanitizeSignedPoints(value) : sanitizePoints(value);
 }
 
 export function sumScores(scores: Scores): number {
