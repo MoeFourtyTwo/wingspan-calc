@@ -1,239 +1,226 @@
 <script lang="ts">
-    import { gameStore, type Player, validateRoundGoalsRow } from "./store";
+    import { gameStore, validateRoundGoalsRow } from "./store";
+    import { ROUND_GOAL_POINTS } from "./rules/scoring";
     import { t } from "./i18n";
-    import { slide } from "svelte/transition";
+    import Egg from "./ui/Egg.svelte";
+    import { sendEgg, receiveEgg } from "./ui/placement";
 
     export let activePlayerId: string | null;
 
     const ROUNDS = [0, 1, 2, 3];
-    const RANKS = [1, 2, 3, 0]; // 1st, 2nd, 3rd, None
+    const RANKS = [1, 2, 3, 0]; // 1st, 2nd, 3rd, none
+    const rankKey = { 1: "rank1", 2: "rank2", 3: "rank3", 0: "none" } as const;
 
-    function togglePlacement(roundIndex: number, rank: number) {
+    $: players = $gameStore.players;
+    $: active = players.find((p) => p.id === activePlayerId);
+
+    function place(round: number, rank: number) {
         if (!activePlayerId) return;
-        // Just set the rank directly. If clicking the same one, it stays (no toggle off needed since we have a 'None' column now)
-        gameStore.updateRoundPlacement(activePlayerId, roundIndex, rank);
-    }
-
-    // Helper to get players in a specific cell
-    function getPlayersInCell(
-        players: Player[],
-        roundIndex: number,
-        rank: number,
-    ) {
-        return players.filter((p) => p.roundPlacements[roundIndex] === rank);
+        gameStore.updateRoundPlacement(activePlayerId, round, rank);
     }
 </script>
 
-<div class="shared-grid-container">
-    <div class="grid">
-        <!-- Header Row -->
-        <div class="row header-row">
-            <div class="cell-label corner">{$t("round")}</div>
-            <div class="cell-header rank-header rank-1">{$t("rank1")}</div>
-            <div class="cell-header rank-header rank-2">{$t("rank2")}</div>
-            <div class="cell-header rank-header rank-3">{$t("rank3")}</div>
-            <div class="cell-header rank-header header-none">{$t("none")}</div>
-        </div>
-
-        {#each ROUNDS as roundIndex}
-            {@const isValid = validateRoundGoalsRow(
-                $gameStore.players,
-                roundIndex,
-            )}
-            <div class="row-wrapper" class:has-error={!isValid}>
-                <div class="row">
-                    <div class="cell-label round-label">
-                        R{roundIndex + 1}
-                    </div>
-
-                    {#each RANKS as rank}
-                        <!-- svelte-ignore a11y-click-events-have-key-events -->
-                        <div
-                            class="cell"
-                            class:active-target={activePlayerId &&
-                                $gameStore.players.find(
-                                    (p) => p.id === activePlayerId,
-                                )?.roundPlacements[roundIndex] === rank}
-                            class:cell-none={rank === 0}
-                            class:rank-1-cell={rank === 1}
-                            class:rank-2-cell={rank === 2}
-                            class:rank-3-cell={rank === 3}
-                            role="button"
-                            tabindex="0"
-                            on:click={() => togglePlacement(roundIndex, rank)}
-                        >
-                            <div class="dots-container">
-                                {#each getPlayersInCell($gameStore.players, roundIndex, rank) as p (p.id)}
-                                    <div
-                                        class="player-dot"
-                                        style="background-color: {p.color};"
-                                        class:is-active={p.id ===
-                                            activePlayerId}
-                                        title={p.name}
-                                    ></div>
-                                {/each}
-                            </div>
-                        </div>
-                    {/each}
-                </div>
-            </div>
+<div class="grid-card">
+    <div class="row head" aria-hidden="true">
+        <span class="corner">{$t("round")}</span>
+        {#each RANKS as rank}
+            <span class="rank-head r{rank}">{$t(rankKey[rank as 0 | 1 | 2 | 3])}</span>
         {/each}
     </div>
+
+    {#each ROUNDS as round}
+        {@const valid = validateRoundGoalsRow(players, round)}
+        <div class="row" class:invalid={!valid}>
+            <span class="round-label">R{round + 1}</span>
+            {#each RANKS as rank}
+                {@const pts = rank > 0 ? ROUND_GOAL_POINTS[round][rank - 1] : null}
+                <button
+                    class="cell r{rank}"
+                    class:target={active?.roundPlacements[round] === rank}
+                    disabled={!activePlayerId}
+                    aria-pressed={active?.roundPlacements[round] === rank}
+                    aria-label={$t("placeIn", {
+                        name: active?.name ?? "",
+                        row: `${$t("round")} ${round + 1}`,
+                        rank: $t(rankKey[rank as 0 | 1 | 2 | 3]),
+                    })}
+                    on:click={() => place(round, rank)}
+                >
+                    {#if pts !== null}<span class="pts">{pts}</span>{/if}
+                    <span class="eggs">
+                        {#each players.filter((p) => p.roundPlacements[round] === rank) as p (p.id)}
+                            <span
+                                class="egg"
+                                class:is-active={p.id === activePlayerId}
+                                in:receiveEgg={{ key: `${p.id}-${round}` }}
+                                out:sendEgg={{ key: `${p.id}-${round}` }}
+                                title={p.name}
+                            >
+                                <Egg color={p.color} size={rank === 0 ? 13 : 16} speckled={false} />
+                            </span>
+                        {/each}
+                    </span>
+                </button>
+            {/each}
+        </div>
+    {/each}
 </div>
 
 <style>
-    .shared-grid-container {
-        padding: 0.5rem;
-        background: white;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        margin-top: 1rem;
-    }
-
-    .grid {
+    .grid-card {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .row-wrapper {
-        padding: 4px;
-        border-radius: 8px;
-        border: 2px solid transparent;
-        transition:
-            border-color 0.2s,
-            background-color 0.2s;
-    }
-
-    .row-wrapper.has-error {
-        background-color: #fff5f5;
-        border-color: #ffcccc;
+        gap: 8px;
+        padding: 10px;
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        /* green goal board */
+        background-image: linear-gradient(135deg, rgba(47, 125, 109, 0.08), transparent 60%);
     }
 
     .row {
         display: grid;
-        grid-template-columns: 50px repeat(3, 1fr) 0.8fr; /* 4th col slightly smaller */
-        gap: 8px;
-        align-items: stretch;
+        grid-template-columns: 34px repeat(3, 1fr) 0.8fr;
+        gap: 6px;
+        padding: 3px;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        transition:
+            background-color 0.2s,
+            border-color 0.2s;
     }
 
-    .header-row {
-        margin-bottom: 0.5rem;
+    .row.invalid {
+        background: #fbe4df;
+        border-color: #e8a99f;
+        animation: wiggle 0.4s ease;
     }
 
-    .cell-label {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: var(--color-text-secondary);
-        font-size: 0.9rem;
+    .head {
+        padding-bottom: 0;
     }
 
-    .rank-header {
+    .corner {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--ink-soft);
+        align-self: center;
         text-align: center;
-        font-weight: 700;
-        padding: 4px;
-        border-radius: 4px;
-        color: #444;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    .rank-1 {
-        background-color: #ffd700;
-        border: 1px solid #e6c200;
-    }
-    .rank-2 {
-        background-color: #c0c0c0;
-        border: 1px solid #aaaaaa;
-    }
-    .rank-3 {
-        background-color: #cd7f32;
-        border: 1px solid #b06d28;
-        color: white;
+    .rank-head {
+        text-align: center;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 3px 0;
+        border-radius: 999px;
+        color: #3a2e12;
     }
 
-    .header-none {
-        background: #eee;
-        color: #777;
-        font-weight: 500;
+    .rank-head.r1 {
+        background: #f2cf55;
+    }
+    .rank-head.r2 {
+        background: #d5d8d6;
+    }
+    .rank-head.r3 {
+        background: #d99b62;
+    }
+    .rank-head.r0 {
+        background: transparent;
+        color: var(--ink-soft);
+        border: 1.5px dashed var(--line);
     }
 
     .round-label {
-        background: #f5f5f5;
-        border-radius: 4px;
-        font-size: 1rem;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-display);
+        font-weight: 600;
+        color: #fff;
+        background: var(--forest);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        align-self: center;
     }
 
     .cell {
-        background: #f9f9f9;
-        border: 2px solid #eee;
-        border-radius: 8px;
-        min-height: 50px;
-        cursor: pointer;
+        position: relative;
+        min-height: 52px;
+        padding: 14px 3px 4px;
+        border-radius: 12px;
+        background: #fff;
+        border: 2px solid rgba(110, 80, 50, 0.16);
         display: flex;
-        flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        padding: 4px;
-        transition: all 0.2s;
     }
 
-    .cell:hover {
-        border-color: #ddd;
-        background: #fff;
+    .cell:hover:not(:disabled) {
+        transform: translateY(-2px);
+        border-color: rgba(110, 80, 50, 0.35);
     }
 
-    .cell-none {
-        border: 2px dashed #eee;
-        background: #fafafa;
-    }
-    .cell-none:hover {
-        border-color: #ccc;
+    .cell:active:not(:disabled) {
+        transform: scale(0.92);
     }
 
-    /* Highlight the cell if it contains the active player */
-    .cell.active-target {
-        border-width: 2px;
-        background-color: white;
+    .cell:disabled {
+        cursor: default;
     }
 
-    .cell.active-target.rank-1-cell {
-        border-color: #ffd700;
-        background-color: rgba(255, 215, 0, 0.1);
-    }
-    .cell.active-target.rank-2-cell {
-        border-color: #c0c0c0;
-        background-color: rgba(192, 192, 192, 0.1);
-    }
-    .cell.active-target.rank-3-cell {
-        border-color: #cd7f32;
-        background-color: rgba(205, 127, 50, 0.1);
+    .cell.r0 {
+        border-style: dashed;
+        background: rgba(255, 255, 255, 0.5);
     }
 
-    .dots-container {
+    .cell.target.r1 {
+        border-color: #e0b52c;
+        background: #fdf3cf;
+    }
+    .cell.target.r2 {
+        border-color: #a9adab;
+        background: #f1f2f1;
+    }
+    .cell.target.r3 {
+        border-color: #c4824a;
+        background: #f8e6d6;
+    }
+    .cell.target.r0 {
+        border-color: var(--ink-soft);
+    }
+
+    .pts {
+        position: absolute;
+        top: 2px;
+        left: 6px;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+    }
+
+    .eggs {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 2px;
         justify-content: center;
-        width: 100%;
     }
 
-    .player-dot {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        transition: transform 0.2s;
+    .egg {
+        display: block;
+        opacity: 0.75;
+        transition: transform 0.25s var(--spring);
     }
 
-    .player-dot.is-active {
-        transform: scale(1.3);
-        border-color: var(--color-text-primary);
-        z-index: 2;
-    }
-
-    .player-dot:not(.is-active) {
-        opacity: 0.7;
+    .egg.is-active {
+        opacity: 1;
+        transform: scale(1.25) translateY(-1px);
     }
 </style>
