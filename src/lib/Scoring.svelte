@@ -1,9 +1,8 @@
 <script lang="ts">
     import {
         gameStore,
-        CATEGORIES,
-        type Category,
-        type Player,
+        activeCategories,
+        isPlacementCategory as isPlacement,
         validateAllRoundGoals,
         validateAllNectar,
     } from "./store";
@@ -23,12 +22,12 @@
 
     // Computed properties
     $: currentCategoryIndex = $gameStore.currentScoringCategoryIndex;
-    $: currentCategory = CATEGORIES[currentCategoryIndex];
+    $: categories = activeCategories($gameStore.options);
+    $: currentCategory = categories[currentCategoryIndex];
     $: label = $t(currentCategory);
     $: isFirstCategory = currentCategoryIndex === 0;
-    $: isLastCategory = currentCategoryIndex === CATEGORIES.length - 1;
-    $: isPlacementCategory =
-        currentCategory === "round_goals" || currentCategory === "nectar";
+    $: isLastCategory = currentCategoryIndex === categories.length - 1;
+    $: isPlacementCategory = isPlacement(currentCategory, $gameStore.options);
 
     // Auto-focus first input when category actually changes (only for numeric input categories)
     $: if (currentCategoryIndex !== previousCategoryIndex) {
@@ -52,7 +51,7 @@
 
     // Reactive validation check for current category
     $: isCurrentCategoryValid = (() => {
-        if (currentCategory === "round_goals") {
+        if (currentCategory === "round_goals" && isPlacementCategory) {
             return validateAllRoundGoals($gameStore.players);
         } else if (currentCategory === "nectar") {
             return validateAllNectar($gameStore.players);
@@ -99,7 +98,7 @@
             ← {$t("back")}
         </button>
         <div class="progress-indicator">
-            <span>{currentCategoryIndex + 1} / {CATEGORIES.length}</span>
+            <span>{currentCategoryIndex + 1} / {categories.length}</span>
         </div>
     </div>
 
