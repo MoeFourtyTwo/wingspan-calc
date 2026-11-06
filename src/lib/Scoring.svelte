@@ -8,7 +8,7 @@
     } from "./store";
     import { CASUAL_ROUND_GOAL_MAX, ROUND_COUNT, SIGNED_CATEGORIES, type Category } from "./rules/scoring";
     import { t, type TranslationKey } from "./i18n";
-    import { tick } from "svelte";
+    import { tick, untrack } from "svelte";
     import RoundGoalGrid from "./RoundGoalGrid.svelte";
     import NectarGoalGrid from "./NectarGoalGrid.svelte";
     import Egg from "./ui/Egg.svelte";
@@ -20,32 +20,14 @@
 
     const CASUAL_MAX = CASUAL_ROUND_GOAL_MAX * ROUND_COUNT;
 
-    let activePlayerId: string | null = null;
-    let inputElements: Record<string, HTMLInputElement> = {};
+    let activePlayerId: string | null = $state(null);
+    let inputElements: Record<string, HTMLInputElement> = $state({});
 
-    $: players = $gameStore.players;
-    $: options = $gameStore.options;
-    $: currentCategoryIndex = $gameStore.currentScoringCategoryIndex;
-    $: categories = activeCategories(options);
-    $: currentCategory = categories[currentCategoryIndex];
-    $: isLastCategory = currentCategoryIndex === categories.length - 1;
-    $: isPlacementCategory = isPlacement(currentCategory, options);
-    $: signed = SIGNED_CATEGORIES.includes(currentCategory);
-    $: maxValue = currentCategory === "round_goals" && !isPlacementCategory ? CASUAL_MAX : undefined;
-    $: hintKey = (
-        currentCategory === "round_goals" && !isPlacementCategory
-            ? "hint_round_goals_casual"
-            : `hint_${currentCategory}`
-    ) as TranslationKey;
 
     // Direction-aware header/content swoop.
+    // Plain variable on purpose: only the category index should trigger the effect.
     let previousCategoryIndex = -1;
-    let dir = 1;
-    $: if (currentCategoryIndex !== previousCategoryIndex) {
-        dir = currentCategoryIndex >= previousCategoryIndex ? 1 : -1;
-        previousCategoryIndex = currentCategoryIndex;
-        onCategoryChange();
-    }
+    let dir = $state(1);
 
     function onCategoryChange() {
         if (isPlacementCategory) {
@@ -91,11 +73,6 @@
         );
     }
 
-    $: isCurrentCategoryValid = (() => {
-        if (currentCategory === "round_goals" && isPlacementCategory) return validateAllRoundGoals(players);
-        if (currentCategory === "nectar") return validateAllNectar(players);
-        return true;
-    })();
 
     function focusNextInput(currentPlayerId: string) {
         const ids = players.map((p) => p.id);
@@ -123,13 +100,39 @@
     }
 
     const pct = (i: number, n: number) => (n <= 1 ? 50 : 6 + (i / (n - 1)) * 88);
-    $: activePlayer = players.find((p) => p.id === activePlayerId);
     const color = (c: Category) => CATEGORY_COLORS[c];
+    let players = $derived($gameStore.players);
+    let options = $derived($gameStore.options);
+    let currentCategoryIndex = $derived($gameStore.currentScoringCategoryIndex);
+    let categories = $derived(activeCategories(options));
+    let currentCategory = $derived(categories[currentCategoryIndex]);
+    let isLastCategory = $derived(currentCategoryIndex === categories.length - 1);
+    let isPlacementCategory = $derived(isPlacement(currentCategory, options));
+    let signed = $derived(SIGNED_CATEGORIES.includes(currentCategory));
+    let maxValue = $derived(currentCategory === "round_goals" && !isPlacementCategory ? CASUAL_MAX : undefined);
+    let hintKey = $derived((
+        currentCategory === "round_goals" && !isPlacementCategory
+            ? "hint_round_goals_casual"
+            : `hint_${currentCategory}`
+    ) as TranslationKey);
+    $effect.pre(() => {
+        if (currentCategoryIndex !== previousCategoryIndex) {
+            dir = currentCategoryIndex >= previousCategoryIndex ? 1 : -1;
+            previousCategoryIndex = currentCategoryIndex;
+            untrack(onCategoryChange);
+        }
+    });
+    let isCurrentCategoryValid = $derived((() => {
+        if (currentCategory === "round_goals" && isPlacementCategory) return validateAllRoundGoals(players);
+        if (currentCategory === "nectar") return validateAllNectar(players);
+        return true;
+    })());
+    let activePlayer = $derived(players.find((p) => p.id === activePlayerId));
 </script>
 
 <div class="scoring">
     <div class="topbar">
-        <button class="btn-ghost" on:click={() => gameStore.prevCategory()}>
+        <button class="btn-ghost" onclick={() => gameStore.prevCategory()}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
             {$t("back")}
         </button>
@@ -184,7 +187,7 @@
                 <div class="card selector">
                     <div class="selector-header">
                         <span class="label-hand">{$t("selectPlayerPlace")}</span>
-                        <button class="icon-btn reset" on:click={handleReset} aria-label={$t("resetGrid")} title={$t("resetGrid")}>
+                        <button class="icon-btn reset" onclick={handleReset} aria-label={$t("resetGrid")} title={$t("resetGrid")}>
                             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5" /></svg>
                         </button>
                     </div>
@@ -195,7 +198,7 @@
                                 class:selected={activePlayerId === player.id}
                                 role="radio"
                                 aria-checked={activePlayerId === player.id}
-                                on:click={() => (activePlayerId = player.id)}
+                                onclick={() => (activePlayerId = player.id)}
                                 in:swoop={{ y: 14, delay: 40 * i, duration: 320 }}
                             >
                                 <span class="avatar-egg"><Egg color={player.color} size={26} /></span>
@@ -236,13 +239,13 @@
                             {#if signed}
                                 <button
                                     class="step sign"
-                                    on:click={() => toggleSign(player.id)}
+                                    onclick={() => toggleSign(player.id)}
                                     aria-label={$t("toggleSign", { name: player.name })}
                                 >±</button>
                             {/if}
                             <button
                                 class="step"
-                                on:click={() => step(player.id, -1)}
+                                onclick={() => step(player.id, -1)}
                                 disabled={!signed && value <= 0}
                                 aria-label={$t("minusOne", { name: player.name })}
                             >−</button>
@@ -256,22 +259,22 @@
                                 max={maxValue}
                                 aria-label={$t("pointsFor", { name: player.name })}
                                 {value}
-                                on:input={(e) => {
+                                oninput={(e) => {
                                     const raw = e.currentTarget.value;
                                     if (raw === "" || raw === "-") return;
                                     setScore(player.id, Number(raw));
                                 }}
-                                on:change={(e) => {
+                                onchange={(e) => {
                                     setScore(player.id, Number(e.currentTarget.value) || 0);
                                     e.currentTarget.value = String(player.scores[currentCategory] ?? 0);
                                 }}
-                                on:keydown={(e) => handleKeydown(e, player.id)}
-                                on:focus={(e) => e.currentTarget.select()}
+                                onkeydown={(e) => handleKeydown(e, player.id)}
+                                onfocus={(e) => e.currentTarget.select()}
                                 placeholder="0"
                             />
                             <button
                                 class="step"
-                                on:click={() => step(player.id, 1)}
+                                onclick={() => step(player.id, 1)}
                                 disabled={maxValue !== undefined && value >= maxValue}
                                 aria-label={$t("plusOne", { name: player.name })}
                             >+</button>
@@ -283,7 +286,7 @@
     {/key}
 
     <div class="actions">
-        <button class="btn-primary next-btn" class:gold={isLastCategory} on:click={() => gameStore.nextCategory()} disabled={!isCurrentCategoryValid}>
+        <button class="btn-primary next-btn" class:gold={isLastCategory} onclick={() => gameStore.nextCategory()} disabled={!isCurrentCategoryValid}>
             {isLastCategory ? $t("finishScoring") : $t("next")}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
         </button>

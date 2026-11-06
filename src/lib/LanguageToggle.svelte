@@ -9,7 +9,7 @@
 <button
     class="language-toggle"
     class:de={$language === "de"}
-    on:click={toggle}
+    onclick={toggle}
     aria-label="{$t('switchLanguage')} (EN / DE)"
 >
     <span class="thumb" aria-hidden="true"></span>

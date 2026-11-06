@@ -39,19 +39,19 @@
     });
 
     // ---------- Animation state ----------
-    let stage: HTMLDivElement;
-    let birdEl: HTMLDivElement;
-    let eggEls: HTMLElement[] = [];
-    let stageSize = 300;
+    let stage: HTMLDivElement | undefined = $state();
+    let birdEl: HTMLDivElement | undefined = $state();
+    let eggEls: HTMLElement[] = $state([]);
+    let stageSize = $state(300);
 
-    let birdAt = -1; // -1 = off stage (top left)
-    let facing: 1 | -1 = 1;
-    let flapping = false;
-    let crouch = false;
-    let shaking = false;
-    let cracked = false;
-    let revealed = false;
-    let running = false;
+    let birdAt = $state(-1); // -1 = off stage (top left)
+    let facing: 1 | -1 = $state(1);
+    let flapping = $state(false);
+    let crouch = $state(false);
+    let shaking = $state(false);
+    let cracked = $state(false);
+    let revealed = $state(false);
+    let running = $state(false);
 
     let cancelled = false;
     const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -66,13 +66,13 @@
         return { x, y };
     }
 
-    $: birdStyle = (() => {
+    let birdStyle = $derived((() => {
         const { x, y } = birdXY(birdAt, stageSize);
         // after hatching the parent bird hops aside to admire the chick
         const dx = revealed ? (eggPos[birdAt]?.x ?? 50) > 60 ? -eggSize * 0.95 : eggSize * 0.95 : 0;
         const dy = revealed ? eggSize * 0.75 : 0;
         return `transform: translate(${x + dx}px, ${y + dy}px)`;
-    })();
+    })());
 
     function sleep(duration: number) {
         return new Promise<void>((resolve) => {
@@ -135,7 +135,7 @@
         wobbleEgg(to);
         // tiny landing squash
         play(
-            birdEl.firstElementChild ?? undefined,
+            birdEl?.firstElementChild ?? undefined,
             [{ transform: "scale(1.12, 0.84)" }, { transform: "scale(1)" }],
             { duration: 180, easing: "cubic-bezier(.34,1.56,.64,1)" },
         );
@@ -307,7 +307,7 @@
         </div>
 
         {#if running}
-            <button class="skip-overlay" on:click={skip} aria-label={$t("skip")}></button>
+            <button class="skip-overlay" onclick={skip} aria-label={$t("skip")}></button>
         {/if}
     </div>
 
@@ -321,7 +321,7 @@
                 {$t("turnStartPre")}<b>{target.name}</b>{$t("turnStartPost")}
             </p>
             <div class="go" in:pop={{ delay: 320, duration: 520, start: 0.2 }}>
-                <button class="btn-primary gold go-btn" on:click={() => gameStore.setPhase("SCORING")}>
+                <button class="btn-primary gold go-btn" onclick={() => gameStore.setPhase("SCORING")}>
                     {$t("letsGo")}
                     <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h13M13 6l6 6-6 6" />
@@ -329,7 +329,7 @@
                 </button>
             </div>
         {:else}
-            <button class="btn-ghost skip-btn" on:click={skip}>
+            <button class="btn-ghost skip-btn" onclick={skip}>
                 {$t("tapToSkip")}
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 6l7 6-7 6M13 6l7 6-7 6" />

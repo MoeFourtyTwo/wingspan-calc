@@ -1,15 +1,28 @@
 <script lang="ts">
     import { shade } from "./color";
 
-    export let color = "#3b7fb6";
-    export let breast = "#e9925a";
-    /** Width in px. */
-    export let size = 48;
-    export let flapping = false;
-    /** -1 mirrors the bird to face left. */
-    export let facing: 1 | -1 = 1;
-    let className = "";
-    export { className as class };
+    
+    
+    interface Props {
+        color?: string;
+        breast?: string;
+        /** Width in px. */
+        size?: number;
+        flapping?: boolean;
+        /** -1 mirrors the bird to face left. */
+        facing?: 1 | -1;
+        class?: string;
+    }
+
+    let {
+        color = "#3b7fb6",
+        breast = "#e9925a",
+        size = 48,
+        flapping = false,
+        facing = 1,
+        class: className = ""
+    }: Props = $props();
+    
 </script>
 
 <svg

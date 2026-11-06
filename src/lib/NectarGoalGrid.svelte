@@ -5,13 +5,17 @@
     import Egg from "./ui/Egg.svelte";
     import { sendEgg, receiveEgg } from "./ui/placement";
 
-    export let activePlayerId: string | null;
+    interface Props {
+        activePlayerId: string | null;
+    }
+
+    let { activePlayerId }: Props = $props();
 
     const RANKS = [1, 2, 0]; // 1st, 2nd, none
     const rankKey = { 1: "rank1", 2: "rank2", 0: "none" } as const;
 
-    $: players = $gameStore.players;
-    $: active = players.find((p) => p.id === activePlayerId);
+    let players = $derived($gameStore.players);
+    let active = $derived(players.find((p) => p.id === activePlayerId));
 
     function place(habitat: number, rank: number) {
         if (!activePlayerId) return;
@@ -53,7 +57,7 @@
                         row: $t(habitat),
                         rank: $t(rankKey[rank as 0 | 1 | 2]),
                     })}
-                    on:click={() => place(h, rank)}
+                    onclick={() => place(h, rank)}
                 >
                     {#if rank > 0}<span class="pts">{NECTAR_POINTS[rank - 1]}</span>{/if}
                     <span class="eggs">

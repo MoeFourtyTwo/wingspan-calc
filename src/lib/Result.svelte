@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
+    import { onDestroy, onMount, untrack } from "svelte";
     import { flip } from "svelte/animate";
     import { gameStore, activeCategories } from "./store";
     import { historyStore } from "./historyStore";
@@ -13,24 +13,24 @@
     import { CATEGORY_COLORS } from "./ui/CategoryIcon.svelte";
     import { pop, swoop, ms, reducedMotion } from "./ui/motion";
 
-    $: players = $gameStore.players;
-    $: categories = activeCategories($gameStore.options);
-    $: standings = rankPlayers(players);
-    $: rows = standings.map((s) => ({ ...s, player: players.find((p) => p.id === s.id)! }));
-    $: winners = rows.filter((r) => r.winner);
-    $: tie = needsTieBreaker(players);
-    $: topTotal = Math.max(...players.map((p) => p.total), 0);
-    $: tiedTop = tie ? players.filter((p) => p.total === topTotal) : [];
-    $: barMax = Math.max(
+    let players = $derived($gameStore.players);
+    let categories = $derived(activeCategories($gameStore.options));
+    let standings = $derived(rankPlayers(players));
+    let rows = $derived(standings.map((s) => ({ ...s, player: players.find((p) => p.id === s.id)! })));
+    let winners = $derived(rows.filter((r) => r.winner));
+    let tie = $derived(needsTieBreaker(players));
+    let topTotal = $derived(Math.max(...players.map((p) => p.total), 0));
+    let tiedTop = $derived(tie ? players.filter((p) => p.total === topTotal) : []);
+    let barMax = $derived(Math.max(
         1,
         ...players.map((p) => categories.reduce((acc, c) => acc + Math.max(0, p.scores[c] ?? 0), 0)),
-    );
+    ));
 
     // ---------- Reveal sequence: last place first, winner last ----------
-    let revealed = new Set<string>();
-    let revealDone = false;
-    let winnerShown = false;
-    let birdLanded = false;
+    let revealed = $state(new Set<string>());
+    let revealDone = $state(false);
+    let winnerShown = $state(false);
+    let birdLanded = $state(false);
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (fn: () => void, delay: number) => timers.push(setTimeout(fn, delay));
 
@@ -57,7 +57,7 @@
     }
 
     // ---------- History (upsert by game id; re-saved after tie-breaks) ----------
-    let mounted = false;
+    let mounted = $state(false);
     let savedDate = "";
 
     function saveGame() {
@@ -75,11 +75,13 @@
         });
     }
 
-    $: if (mounted) {
-        // re-run whenever standings change (e.g. leftover food entered)
+    // Re-save whenever the standings change (e.g. leftover food entered).
+    // saveGame reads and writes the history store, so it must run untracked.
+    $effect(() => {
+        if (!mounted) return;
         void rows;
-        saveGame();
-    }
+        untrack(saveGame);
+    });
 
     onMount(() => {
         savedDate = $historyStore.find((g) => g.id === $gameStore.gameId)?.date ?? new Date().toISOString();
@@ -101,12 +103,12 @@
 
 <div class="result">
     <div class="topbar">
-        <button class="btn-ghost" on:click={() => gameStore.backToScoring()}>
+        <button class="btn-ghost" onclick={() => gameStore.backToScoring()}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
             {$t("adjustScores")}
         </button>
         {#if !revealDone}
-            <button class="btn-ghost skip" on:click={skip}>{$t("skip")}</button>
+            <button class="btn-ghost skip" onclick={skip}>{$t("skip")}</button>
         {/if}
     </div>
 
@@ -166,7 +168,7 @@
                             <button
                                 class="step"
                                 disabled={p.leftoverFood <= 0}
-                                on:click={() => gameStore.setLeftoverFood(p.id, p.leftoverFood - 1)}
+                                onclick={() => gameStore.setLeftoverFood(p.id, p.leftoverFood - 1)}
                                 aria-label="{$t('foodTokens')} − ({p.name})">−</button
                             >
                             <input
@@ -175,12 +177,12 @@
                                 min="0"
                                 value={p.leftoverFood}
                                 aria-label="{$t('foodTokens')}: {p.name}"
-                                on:input={(e) => gameStore.setLeftoverFood(p.id, Number(e.currentTarget.value))}
-                                on:focus={(e) => e.currentTarget.select()}
+                                oninput={(e) => gameStore.setLeftoverFood(p.id, Number(e.currentTarget.value))}
+                                onfocus={(e) => e.currentTarget.select()}
                             />
                             <button
                                 class="step"
-                                on:click={() => gameStore.setLeftoverFood(p.id, p.leftoverFood + 1)}
+                                onclick={() => gameStore.setLeftoverFood(p.id, p.leftoverFood + 1)}
                                 aria-label="{$t('foodTokens')} + ({p.name})">+</button
                             >
                         </div>
@@ -260,16 +262,16 @@
 
     {#if revealDone}
         <div class="actions" in:swoop={{ y: 24, delay: 350 }}>
-            <button class="btn-primary" on:click={() => gameStore.setPhase("STATS")}>
+            <button class="btn-primary" onclick={() => gameStore.setPhase("STATS")}>
                 {$t("viewStats")}
                 <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
             </button>
-            <button class="btn-secondary new-game" on:click={playAgain}>{$t("newGame")}</button>
+            <button class="btn-secondary new-game" onclick={playAgain}>{$t("newGame")}</button>
         </div>
     {/if}
 
     {#if !revealDone}
-        <button class="skip-overlay" on:click={skip} aria-label={$t("tapToSkip")}></button>
+        <button class="skip-overlay" onclick={skip} aria-label={$t("tapToSkip")}></button>
     {/if}
 </div>
 

@@ -1,11 +1,16 @@
 <script lang="ts">
     import { shade } from "./color";
 
-    export let color = "#3b7fb6";
-    /** Height in px. */
-    export let size = 36;
-    let className = "";
-    export { className as class };
+    
+    interface Props {
+        color?: string;
+        /** Height in px. */
+        size?: number;
+        class?: string;
+    }
+
+    let { color = "#3b7fb6", size = 36, class: className = "" }: Props = $props();
+    
 </script>
 
 <svg
