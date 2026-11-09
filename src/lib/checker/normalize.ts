@@ -38,7 +38,9 @@ const isX = (v: unknown) => v === 'X' || v === 'x' || v === true;
 export function plainText(html: string): string {
     return html
         .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/(p|li|tr|div)>/gi, '\n')
+        // table cells: keep them apart ("Grundspiel, Ozeanien: Biologe, Morphologe")
+        .replace(/<\/t[hd]>\s*(?=<t[hd][\s>])/gi, ': ')
+        .replace(/<\/(p|li|tr|div|table|th|td)>/gi, '\n')
         .replace(/<[^>]*>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')

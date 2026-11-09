@@ -29,7 +29,7 @@ export const MIRRORS = [
 ];
 
 const CACHE_KEY = `wingspan_checker_${DATA_COMMIT.slice(0, 12)}`;
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 type Fetch = typeof fetch;
 

@@ -27,6 +27,19 @@ export const TOKENS: Readonly<Record<string, { en: string; de: string }>> = {
     emerald: { en: 'emerald', de: 'Smaragd' },
     mango: { en: 'mango', de: 'Mango' },
     topaz: { en: 'topaz', de: 'Topas' },
+    // Used in bird powers and rulings (bonus card checker).
+    nectar: { en: 'nectar', de: 'Nektar' },
+    card: { en: 'card', de: 'Karte' },
+    egg: { en: 'egg', de: 'Ei' },
+    die: { en: 'die', de: 'Würfel' },
+    dice: { en: 'dice', de: 'Würfel' },
+    star: { en: 'star', de: 'Stern' },
+    bird: { en: 'bird', de: 'Vogel' },
+    cube: { en: 'action cube', de: 'Aktionswürfel' },
+    automa: { en: 'Automa', de: 'Automa' },
+    'duet-token': { en: 'Duet token', de: 'Duett-Marker' },
+    'beak-left': { en: 'left-facing beak', de: 'Schnabel nach links' },
+    bonus_cards: { en: 'bonus cards', de: 'Bonuskarten' },
 };
 
 /** Replace `[token]` markers with readable words in the given language. */

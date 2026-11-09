@@ -1,0 +1,154 @@
+/* Shared styles of the bonus card checker (rows, badges, hints). */
+.chk-root .count {
+    margin: 6px 4px 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.chk-root .empty {
+    margin: 8px 4px;
+    font-size: 1.25rem;
+    color: var(--ink-soft);
+}
+
+.chk-root .rows {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.chk-root .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 10px 8px 14px;
+    text-align: left;
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 0 rgba(110, 80, 50, 0.1);
+    font-weight: 600;
+}
+
+.chk-root .row:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 0 rgba(110, 80, 50, 0.1), 0 0 0 2px rgba(47, 125, 109, 0.22);
+}
+
+.chk-root .row:active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+}
+
+.chk-root .row-main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+}
+
+.chk-root .row-title {
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+}
+
+.chk-root .row-sub {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chk-root .chev {
+    flex: none;
+    color: var(--ink-soft);
+}
+
+.chk-root .bird-row.v-no {
+    background: #fbe9e5;
+    border-color: rgba(194, 85, 74, 0.45);
+}
+
+.chk-root .bird-row.v-yes {
+    border-left: 5px solid var(--forest);
+}
+
+.chk-root .bird-row.v-maybe {
+    border-left: 5px solid var(--gold);
+}
+
+.chk-root .bird-row.v-unknown {
+    background: #efeee9;
+}
+
+.chk-root .set-badge {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--twig-deep);
+    background: rgba(138, 97, 66, 0.12);
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chk-root .set-european {
+    color: #1d4f7a;
+    background: rgba(59, 127, 182, 0.15);
+}
+
+.chk-root .set-oceania {
+    color: #8a2d58;
+    background: rgba(216, 87, 138, 0.15);
+}
+
+.chk-root .set-asia {
+    color: #7a3a14;
+    background: rgba(214, 120, 60, 0.18);
+}
+
+.chk-root .set-americas {
+    color: #0b6660;
+    background: rgba(18, 163, 154, 0.15);
+}
+
+.chk-root .back {
+    margin: 0 0 12px -6px;
+    min-height: 44px;
+}
+
+.chk-root .hint {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    border: 1.5px dashed var(--line);
+}
+
+.chk-root .hint.state {
+    background: rgba(233, 182, 50, 0.16);
+    border-color: rgba(166, 124, 19, 0.4);
+}
+
+.chk-root .hint.other,
+.chk-root .hint.unknown {
+    background: rgba(141, 139, 128, 0.12);
+}
+
+.chk-root .list-view {
+    display: grid;
+    gap: 4px;
+}
+
+.chk-root .more {
+    width: 100%;
+    margin-top: 10px;
+}

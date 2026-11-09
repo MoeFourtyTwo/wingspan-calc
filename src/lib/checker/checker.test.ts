@@ -152,6 +152,12 @@ describe('normalize', () => {
 });
 
 describe('sanitising external text', () => {
+    test('plainText keeps table cells and rows apart', () => {
+        expect(plainText('Hinweis<br><table><th>Kombination</th><th>Entfernen</th><tr><td>Grundspiel, Ozeanien</td><td>Biologe</td></tr><tr><td>Asien</td><td>Geograf</td></tr></table>')).toBe(
+            'Hinweis\nKombination: Entfernen\nGrundspiel, Ozeanien: Biologe\nAsien: Geograf',
+        );
+    });
+
     test('plainText strips tags and entities', () => {
         expect(plainText('<script>alert(1)</script><b>Hi</b>&nbsp;there<br/>next')).toBe('alert(1)Hi there\nnext');
     });

@@ -10,6 +10,8 @@
     import LanguageToggle from "./lib/LanguageToggle.svelte";
     import Bird from "./lib/ui/Bird.svelte";
     import Feather from "./lib/ui/Feather.svelte";
+    import Binoculars from "./lib/ui/Binoculars.svelte";
+    import Checker from "./lib/checker/Checker.svelte";
     import { swoop } from "./lib/ui/motion";
 
     const ORDER: Phase[] = ["SETUP", "SELECTION", "DRAW", "SCORING", "RESULT", "STATS"];
@@ -27,6 +29,9 @@
             window.scrollTo({ top: 0 });
         }
     });
+
+    // Bonus card checker: an overlay on top of whatever phase is showing.
+    let checkerOpen = $state(false);
 
     let hop = $state(false);
     function birdHop() {
@@ -61,7 +66,17 @@
             <h1>{$t("appTitle")}</h1>
             <p class="tagline">{$t("appTagline")}</p>
         </div>
-        <div class="lang">
+        <div class="tools">
+            <button
+                class="checker-btn"
+                class:active={checkerOpen}
+                onclick={() => (checkerOpen = true)}
+                aria-label={$t("chkOpen")}
+                aria-haspopup="dialog"
+                title={$t("chkOpen")}
+            >
+                <Binoculars size={22} />
+            </button>
             <LanguageToggle />
         </div>
     </header>
@@ -89,6 +104,10 @@
         {/key}
     </div>
 </main>
+
+{#if checkerOpen}
+    <Checker onclose={() => (checkerOpen = false)} />
+{/if}
 
 <style>
     main {
@@ -200,6 +219,36 @@
 
     .titles {
         min-width: 0;
+    }
+
+    .tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .checker-btn {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        flex: none;
+        border-radius: 50%;
+        color: var(--forest-deep);
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        box-shadow: 0 3px 0 rgba(110, 80, 50, 0.16);
+        --lens: rgba(47, 125, 109, 0.18);
+    }
+
+    .checker-btn:hover {
+        transform: translateY(-1px) rotate(-6deg);
+    }
+
+    .checker-btn:active {
+        transform: translateY(2px) scale(0.9);
+        box-shadow: 0 1px 0 rgba(110, 80, 50, 0.16);
+        transition-duration: 0.08s;
     }
 
     h1 {
