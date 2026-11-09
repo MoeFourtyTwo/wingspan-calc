@@ -340,6 +340,7 @@ const en = {
     guestChangePlayers: "Change players",
     guestProgress: "{i} of {n} entered",
     guestAtTable: "At the table: {category}",
+    guestNow: "at the table now",
     guestStandings: "Final standings",
 };
 
@@ -650,6 +651,7 @@ const de: Record<TranslationKey, string> = {
     guestChangePlayers: "Spieler ändern",
     guestProgress: "{i} von {n} eingetragen",
     guestAtTable: "Am Tisch gerade: {category}",
+    guestNow: "gerade am Tisch",
     guestStandings: "Endstand",
 };
 
