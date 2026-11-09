@@ -8,6 +8,7 @@
     import Egg from "./ui/Egg.svelte";
     import CategoryIcon from "./ui/CategoryIcon.svelte";
     import { swoop, poof, ms } from "./ui/motion";
+    import CollabCard from "./collab/CollabCard.svelte";
 
     const colors = [
         "#7fb2d9", // blue
@@ -226,6 +227,9 @@
             </ul>
         {/if}
     </section>
+
+    <!-- Shared game: host for other phones, or join one -->
+    <CollabCard playerCount={players.length} />
 
     <!-- Options -->
     <section class="card options" in:swoop={{ y: 18, delay: 140 }}>

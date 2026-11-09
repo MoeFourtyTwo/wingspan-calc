@@ -186,11 +186,23 @@ export function createGuestCore(room: string, transport: Transport, game: Mirror
         }
         // A different (e.g. reloaded) host starts its own sequence.
         if (peer === hostPeer && msg.seq <= lastSeq) return;
-        if (peer !== hostPeer) transport.send(hello(), peer);
+        let claims = msg.claims;
+        if (peer !== hostPeer) {
+            transport.send(hello(), peer);
+            // A reloaded host forgot who scores whom: claim our players again.
+            const ids = new Set(Array.isArray(msg.game?.players) ? msg.game.players.map(p => p?.id) : []);
+            const mine = Object.entries(get(view).claims)
+                .filter(([pid, d]) => d === deviceId && ids.has(pid) && !claims[pid])
+                .map(([pid]) => pid);
+            if (mine.length > 0 && !Object.values(claims).includes(deviceId)) {
+                transport.send({ t: 'claim', playerIds: mine }, peer);
+                claims = { ...claims, ...Object.fromEntries(mine.map(pid => [pid, deviceId])) };
+            }
+        }
         hostPeer = peer;
         lastSeq = msg.seq;
         game.applySnapshot(msg.game);
-        view.update(v => ({ ...v, status: 'connected', claims: msg.claims, devices: msg.devices, filled: msg.filled }));
+        view.update(v => ({ ...v, status: 'connected', claims, devices: msg.devices, filled: msg.filled }));
     });
 
     return {
@@ -204,6 +216,13 @@ export function createGuestCore(room: string, transport: Transport, game: Mirror
                 for (const id of playerIds) if (!claims[id]) claims[id] = deviceId;
                 return { ...v, claims };
             });
+        },
+        /** Rename this phone (shown in the host's list of connected phones). */
+        setLabel(next: string) {
+            const trimmed = next.trim().slice(0, 40);
+            if (!trimmed || trimmed === label) return;
+            label = trimmed;
+            if (hostPeer) transport.send(hello(), hostPeer);
         },
         leave() {
             game.leaveMirror();

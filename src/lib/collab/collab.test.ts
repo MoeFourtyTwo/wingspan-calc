@@ -254,6 +254,25 @@ describe('shared game session', () => {
         expect(get(host).players[0].scores.food).toBe(3);
     });
 
+    test('after a host reload the phones claim their players again', async () => {
+        const { net, g1, ids, hostCore, host } = await scenario();
+        g1.claim([ids[0], ids[1]]);
+        await settle();
+        hostCore.stop();
+        await settle();
+        const reloaded = createHostCore('ROOM42', net.connect(), host, { throttleMs: 0 });
+        await settle();
+        expect(get(reloaded.view).claims).toEqual({ [ids[0]]: 'device-1', [ids[1]]: 'device-1' });
+        expect(get(g1.view).status).toBe('connected');
+    });
+
+    test('a guest can rename its phone', async () => {
+        const { g1, hostCore } = await scenario();
+        g1.setLabel('Handy von Patricia & Mama');
+        await settle();
+        expect(get(hostCore.view).devices['device-1'].label).toBe('Handy von Patricia & Mama');
+    });
+
     test('a new game on the host clears the claims', async () => {
         const { g1, ids, host, hostCore } = await scenario();
         g1.claim([ids[0]]);

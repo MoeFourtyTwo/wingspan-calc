@@ -13,6 +13,19 @@
     import { CATEGORY_COLORS } from "./ui/CategoryIcon.svelte";
     import { pop, swoop, ms, reducedMotion } from "./ui/motion";
 
+    interface Props {
+        /**
+         * Guest phone in a shared game: read-only standings, nothing saved to
+         * this phone's history, and a "Leave" button instead of the game flow.
+         */
+        spectator?: boolean;
+        onleave?: () => void;
+        /** Spectators may only enter leftover food for the players they score. */
+        canEditFood?: (playerId: string) => boolean;
+    }
+
+    let { spectator = false, onleave, canEditFood = () => !spectator }: Props = $props();
+
     let players = $derived($gameStore.players);
     let categories = $derived(activeCategories($gameStore.options));
     let standings = $derived(rankPlayers(players));
@@ -78,7 +91,7 @@
     // Re-save whenever the standings change (e.g. leftover food entered).
     // saveGame reads and writes the history store, so it must run untracked.
     $effect(() => {
-        if (!mounted) return;
+        if (!mounted || spectator) return;
         void rows;
         untrack(saveGame);
     });
@@ -103,10 +116,14 @@
 
 <div class="result">
     <div class="topbar">
-        <button class="btn-ghost" onclick={() => gameStore.backToScoring()}>
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
-            {$t("adjustScores")}
-        </button>
+        {#if spectator}
+            <h2 class="spectator-title">{$t("guestStandings")}</h2>
+        {:else}
+            <button class="btn-ghost" onclick={() => gameStore.backToScoring()}>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
+                {$t("adjustScores")}
+            </button>
+        {/if}
         {#if !revealDone}
             <button class="btn-ghost skip" onclick={skip}>{$t("skip")}</button>
         {/if}
@@ -167,7 +184,7 @@
                         <div class="stepper">
                             <button
                                 class="step"
-                                disabled={p.leftoverFood <= 0}
+                                disabled={p.leftoverFood <= 0 || !canEditFood(p.id)}
                                 onclick={() => gameStore.setLeftoverFood(p.id, p.leftoverFood - 1)}
                                 aria-label="{$t('foodTokens')} − ({p.name})">−</button
                             >
@@ -175,6 +192,7 @@
                                 type="number"
                                 inputmode="numeric"
                                 min="0"
+                                disabled={!canEditFood(p.id)}
                                 value={p.leftoverFood}
                                 aria-label="{$t('foodTokens')}: {p.name}"
                                 oninput={(e) => gameStore.setLeftoverFood(p.id, Number(e.currentTarget.value))}
@@ -182,6 +200,7 @@
                             />
                             <button
                                 class="step"
+                                disabled={!canEditFood(p.id)}
                                 onclick={() => gameStore.setLeftoverFood(p.id, p.leftoverFood + 1)}
                                 aria-label="{$t('foodTokens')} + ({p.name})">+</button
                             >
@@ -262,11 +281,15 @@
 
     {#if revealDone}
         <div class="actions" in:swoop={{ y: 24, delay: 350 }}>
-            <button class="btn-primary" onclick={() => gameStore.setPhase("STATS")}>
-                {$t("viewStats")}
-                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
-            </button>
-            <button class="btn-secondary new-game" onclick={playAgain}>{$t("newGame")}</button>
+            {#if spectator}
+                <button class="btn-secondary new-game" onclick={() => onleave?.()}>{$t("guestLeave")}</button>
+            {:else}
+                <button class="btn-primary" onclick={() => gameStore.setPhase("STATS")}>
+                    {$t("viewStats")}
+                    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+                </button>
+                <button class="btn-secondary new-game" onclick={playAgain}>{$t("newGame")}</button>
+            {/if}
         </div>
     {/if}
 
@@ -289,6 +312,11 @@
         margin: -4px -6px 4px;
         position: relative;
         z-index: 25;
+    }
+
+    .spectator-title {
+        font-size: 1.3rem;
+        padding: 6px 8px;
     }
 
     .skip {
