@@ -361,3 +361,27 @@ input {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- Screen layout ----------
+   Screens are flex columns whose sections never shrink. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  /* Room below the sticky action bar. On Android, when the address bar
+     slides away, sticky elements are still placed against the smaller
+     viewport and end up one address-bar height too high; this space keeps
+     the bar from covering the last section at the end of the page. */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.screen > * {
+  flex-shrink: 0;
+}
+
+/* Primary actions pinned to the bottom, in thumb reach. */
+.sticky-actions {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  margin-top: 16px;
+}

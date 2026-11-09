@@ -160,13 +160,22 @@
     let activePlayer = $derived(players.find((p) => p.id === activePlayerId));
     let quickSumPlayer = $derived(players.find((p) => p.id === quickSumPlayerId));
     let quickSumNext = $derived(quickSumPlayerId ? players.find((p) => p.id === nextPlayerId(quickSumPlayerId!)) : undefined);
+
+    /** Abandon the running game (e.g. after a demo); nothing is saved. */
+    function abandonGame() {
+        if (confirm($t("abandonConfirm"))) gameStore.resetGame();
+    }
 </script>
 
-<div class="scoring">
+<div class="scoring screen">
     <div class="topbar">
         <button class="btn-ghost" onclick={() => gameStore.prevCategory()}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
             {$t("back")}
+        </button>
+        <button class="btn-ghost abandon" onclick={abandonGame} title={$t("abandonConfirmShort")}>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9" /><path d="M4 4v5h5" /></svg>
+            {$t("abandonGame")}
         </button>
         <span class="step-count hand">{currentCategoryIndex + 1} / {categories.length}</span>
     </div>
@@ -343,7 +352,7 @@
         />
     {/if}
 
-    <div class="actions">
+    <div class="actions sticky-actions">
         <button class="btn-primary next-btn" class:gold={isLastCategory} onclick={() => gameStore.nextCategory()} disabled={!isCurrentCategoryValid}>
             {isLastCategory ? $t("finishScoring") : $t("next")}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
@@ -353,8 +362,7 @@
 
 <style>
     .scoring {
-        display: flex;
-        flex-direction: column;
+        flex: 1;
     }
 
     .topbar {
@@ -362,6 +370,11 @@
         justify-content: space-between;
         align-items: center;
         margin: -4px -6px 0;
+    }
+
+    .abandon {
+        color: var(--berry);
+        font-size: 0.95rem;
     }
 
     .step-count {
@@ -684,10 +697,7 @@
     }
 
     .actions {
-        position: sticky;
-        bottom: 12px;
+        /* push to the bottom when a category is short */
         margin-top: auto;
-        padding-top: 8px;
-        z-index: 5;
     }
 </style>
