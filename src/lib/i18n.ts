@@ -319,6 +319,8 @@ const en = {
     guestConnecting: "Connecting…",
     guestConnected: "Connected",
     guestReconnecting: "Connection lost – reconnecting…",
+    guestPendingWaiting: "{n} change(s) waiting for the connection",
+    guestPendingSending: "{n} change(s) being sent…",
     guestEnded: "The host has stopped sharing",
     guestEndedHint: "You can still look at the last state. Leave to get back to your own games.",
     guestLeave: "Leave",
@@ -340,6 +342,7 @@ const en = {
     guestChangePlayers: "Change players",
     guestProgress: "{i} of {n} entered",
     guestAtTable: "At the table: {category}",
+    guestNow: "at the table now",
     guestStandings: "Final standings",
 };
 
@@ -629,6 +632,8 @@ const de: Record<TranslationKey, string> = {
     guestConnecting: "Verbinde…",
     guestConnected: "Verbunden",
     guestReconnecting: "Verbindung weg – verbinde neu…",
+    guestPendingWaiting: "{n} Änderung(en) warten auf Verbindung",
+    guestPendingSending: "{n} Änderung(en) werden gesendet…",
     guestEnded: "Der Gastgeber hat das Teilen beendet",
     guestEndedHint: "Du kannst dir den letzten Stand noch ansehen. Verlasse das Spiel, um zu deinen eigenen Partien zurückzukehren.",
     guestLeave: "Verlassen",
@@ -650,6 +655,7 @@ const de: Record<TranslationKey, string> = {
     guestChangePlayers: "Spieler ändern",
     guestProgress: "{i} von {n} eingetragen",
     guestAtTable: "Am Tisch gerade: {category}",
+    guestNow: "gerade am Tisch",
     guestStandings: "Endstand",
 };
 

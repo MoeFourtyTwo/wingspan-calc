@@ -12,9 +12,11 @@
  */
 import { get, writable, type Readable } from 'svelte/store';
 import { gameStore, type GameState, type PlayerEdit } from '../store';
+import { sanitizeCategoryPoints, sanitizePoints } from '../rules/scoring';
 import {
     PROTOCOL_VERSION,
     applyClaim,
+    editKey,
     checkEdit,
     newRoomCode,
     parseGuestMessage,
@@ -33,6 +35,7 @@ export interface MirrorAccess {
     subscribe: Readable<GameState>['subscribe'];
     enterMirror(onEdit: (edit: PlayerEdit) => void): void;
     applySnapshot(raw: unknown): void;
+    replayLocal(edit: PlayerEdit): void;
     leaveMirror(): void;
 }
 
@@ -117,6 +120,7 @@ export function createHostCore(room: string, transport: Transport, game: GameAcc
             claims = applyClaim(claims, device, msg.playerIds, current.players.map(p => p.id));
         } else if (msg.t === 'edit') {
             if (checkEdit(msg.edit, current, claims, device)) {
+                transport.send({ t: 'reject', key: editKey(msg.edit) }, peer);
                 transport.send(snapshot(), peer); // undo the guest's optimistic change
                 return;
             }
@@ -158,16 +162,75 @@ export interface GuestView {
     claims: Record<string, string>;
     devices: Record<string, string>;
     filled: Record<string, string[]>;
+    /** Edits this phone made that the host has not confirmed yet. */
+    pending: number;
 }
 
-export function createGuestCore(room: string, transport: Transport, game: MirrorAccess, deviceId: string, label: string) {
+/** Does the host's game already contain this edit? (Unknown player: nothing left to do.) */
+export function isReflected(game: GameState, e: PlayerEdit): boolean {
+    const p = game.players.find(x => x.id === e.playerId);
+    if (!p) return true;
+    switch (e.k) {
+        case 'score':
+            return p.scores[e.category] === sanitizeCategoryPoints(e.category, e.value);
+        case 'round':
+            return p.roundPlacements[e.index] === e.rank;
+        case 'nectar':
+            return p.nectarPlacements[e.index] === e.rank;
+        case 'food':
+            return p.leftoverFood === sanitizePoints(e.amount);
+    }
+}
+
+/** Resend an unconfirmed edit at most this often, and give up after this many tries. */
+const RESEND_AFTER_MS = 1500;
+const MAX_ATTEMPTS = 5;
+
+export function createGuestCore(
+    room: string,
+    transport: Transport,
+    game: MirrorAccess,
+    deviceId: string,
+    label: string,
+    { resendMs = RESEND_AFTER_MS } = {},
+) {
     let hostPeer: string | null = null;
     let lastSeq = -1;
-    const view = writable<GuestView>({ room, status: 'connecting', deviceId, claims: {}, devices: {}, filled: {} });
+    const view = writable<GuestView>({ room, status: 'connecting', deviceId, claims: {}, devices: {}, filled: {}, pending: 0 });
     const hello = () => ({ t: 'hello', v: PROTOCOL_VERSION, deviceId, label });
 
+    /**
+     * Edits are kept until a host snapshot contains them. A phone that drops
+     * out (screen locked, Wi-Fi hiccup) keeps showing its edits and sends them
+     * again once the host is back; edits are idempotent, so repeats are harmless.
+     */
+    const pending = new Map<string, { edit: PlayerEdit; attempts: number; sentAt: number }>();
+    const publishPending = () => view.update(v => (v.pending === pending.size ? v : { ...v, pending: pending.size }));
+
+    const send = (key: string, force: boolean) => {
+        const p = pending.get(key);
+        if (!p || !hostPeer) return;
+        if (!force && Date.now() - p.sentAt < resendMs) return;
+        if (p.attempts >= MAX_ATTEMPTS) {
+            pending.delete(key); // e.g. rejected by the host – its snapshot wins
+            return;
+        }
+        p.attempts++;
+        p.sentAt = Date.now();
+        transport.send({ t: 'edit', edit: p.edit }, hostPeer);
+    };
+
+    // Retry unconfirmed edits even when the table is quiet (no snapshots arrive).
+    const retry = setInterval(() => {
+        for (const key of [...pending.keys()]) send(key, false);
+        publishPending();
+    }, resendMs);
+
     game.enterMirror(edit => {
-        if (hostPeer) transport.send({ t: 'edit', edit }, hostPeer);
+        const key = editKey(edit);
+        pending.set(key, { edit, attempts: 0, sentAt: 0 });
+        send(key, true);
+        publishPending();
     });
 
     transport.onPeerJoin(peer => transport.send(hello(), peer));
@@ -184,10 +247,15 @@ export function createGuestCore(room: string, transport: Transport, game: Mirror
             if (peer === hostPeer) view.update(v => ({ ...v, status: 'ended' }));
             return;
         }
+        if (msg.t === 'reject') {
+            if (peer === hostPeer && pending.delete(msg.key)) publishPending();
+            return;
+        }
         // A different (e.g. reloaded) host starts its own sequence.
         if (peer === hostPeer && msg.seq <= lastSeq) return;
         let claims = msg.claims;
-        if (peer !== hostPeer) {
+        const newHost = peer !== hostPeer;
+        if (newHost) {
             transport.send(hello(), peer);
             // A reloaded host forgot who scores whom: claim our players again.
             const ids = new Set(Array.isArray(msg.game?.players) ? msg.game.players.map(p => p?.id) : []);
@@ -202,7 +270,19 @@ export function createGuestCore(room: string, transport: Transport, game: Mirror
         hostPeer = peer;
         lastSeq = msg.seq;
         game.applySnapshot(msg.game);
-        view.update(v => ({ ...v, status: 'connected', claims, devices: msg.devices, filled: msg.filled }));
+
+        // Confirmed edits are done; the rest stay visible and are sent (again).
+        const state = get(game);
+        for (const [key, p] of pending) {
+            if (isReflected(state, p.edit)) {
+                pending.delete(key);
+            } else {
+                game.replayLocal(p.edit);
+                if (newHost) p.attempts = 0; // fresh connection, fresh tries
+                send(key, newHost);
+            }
+        }
+        view.update(v => ({ ...v, status: 'connected', claims, devices: msg.devices, filled: msg.filled, pending: pending.size }));
     });
 
     return {
@@ -225,6 +305,7 @@ export function createGuestCore(room: string, transport: Transport, game: Mirror
             if (hostPeer) transport.send(hello(), hostPeer);
         },
         leave() {
+            clearInterval(retry);
             game.leaveMirror();
             transport.leave();
         },

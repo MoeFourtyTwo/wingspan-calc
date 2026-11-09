@@ -21,6 +21,8 @@ import type { Transport } from './transport';
 
 function hub() {
     const peers = new Map<string, { onMsg: (m: unknown, from: string) => void; onJoin: (p: string) => void; onLeave: (p: string) => void }>();
+    /** Cut-off peers: their messages vanish in both directions. */
+    const cut = new Set<string>();
     let n = 0;
     const deliver = (fn: () => void) => queueMicrotask(fn);
     return {
@@ -39,7 +41,11 @@ function hub() {
                 selfId: id,
                 send: (m, target) => {
                     const copy = JSON.parse(JSON.stringify(m));
-                    for (const [pid, p] of others()) if (!target || target === pid) deliver(() => p.onMsg(copy, id));
+                    for (const [pid, p] of others()) {
+                        if (target && target !== pid) continue;
+                        if (cut.has(id) || cut.has(pid)) continue;
+                        deliver(() => p.onMsg(copy, id));
+                    }
                 },
                 onMessage: h => (me.onMsg = h),
                 onPeerJoin: h => (me.onJoin = h),
@@ -49,6 +55,27 @@ function hub() {
                     for (const [, p] of peers) deliver(() => p.onLeave(id));
                 },
             };
+        },
+        /** Cut a peer off. `noticed`: both sides see it leave (otherwise it fails silently). */
+        drop(id: string, noticed = true) {
+            cut.add(id);
+            if (!noticed) return;
+            const me = peers.get(id)!;
+            for (const [pid, p] of peers) {
+                if (pid === id) continue;
+                deliver(() => p.onLeave(id));
+                deliver(() => me.onLeave(pid));
+            }
+        },
+        /** Reconnect a cut-off peer: both sides see it join again. */
+        restore(id: string) {
+            cut.delete(id);
+            const me = peers.get(id)!;
+            for (const [pid, p] of peers) {
+                if (pid === id) continue;
+                deliver(() => p.onJoin(id));
+                deliver(() => me.onJoin(pid));
+            }
         },
     };
 }
@@ -72,10 +99,11 @@ async function scenario() {
     const hostCore = createHostCore('ROOM42', net.connect(), host, { throttleMs: 0 });
     const g1Store = createGameStore({ persist: false });
     const g2Store = createGameStore({ persist: false });
-    const g1 = createGuestCore('ROOM42', net.connect(), g1Store, 'device-1', 'Patricias Handy');
+    const t1 = net.connect();
+    const g1 = createGuestCore('ROOM42', t1, g1Store, 'device-1', 'Patricias Handy');
     const g2 = createGuestCore('ROOM42', net.connect(), g2Store, 'device-2', 'Moritz Handy');
     await settle();
-    return { net, host, ids, hostCore, g1, g2, g1Store, g2Store };
+    return { net, host, ids, hostCore, g1, g2, g1Store, g2Store, g1Peer: t1.selfId };
 }
 
 // ---------------------------------------------------------------- protocol
@@ -307,5 +335,110 @@ describe('shared game session', () => {
         rogue.send({ t: 'edit', edit: { k: 'score', playerId: ids[0], category: 'birds', value: 5 } });
         await settle();
         expect(get(host).players[0].scores.birds).toBe(0);
+    });
+});
+
+describe('dropouts (phone locked, Wi-Fi hiccup)', () => {
+    test('edits made while disconnected are sent once the phone is back', async () => {
+        const { net, g1, g1Store, g1Peer, host, ids } = await scenario();
+        g1.claim([ids[0]]);
+        await settle();
+        net.drop(g1Peer);
+        await settle();
+        expect(get(g1.view).status).toBe('connecting');
+
+        g1Store.updateScore(ids[0], 'birds', 38);
+        g1Store.updateScore(ids[0], 'eggs', 6);
+        await settle();
+        expect(get(g1Store).players[0].scores.birds).toBe(38); // still shown on the phone
+        expect(get(host).players[0].scores.birds).toBe(0);
+        expect(get(g1.view).pending).toBe(2);
+
+        net.restore(g1Peer);
+        await settle();
+        expect(get(host).players[0].scores.birds).toBe(38);
+        expect(get(host).players[0].scores.eggs).toBe(6);
+        expect(get(g1.view).pending).toBe(0);
+        expect(get(g1.view).status).toBe('connected');
+    });
+
+    test('an edit lost on a connection that died unnoticed is resent after reconnecting', async () => {
+        const { net, g1, g1Store, g1Peer, host, ids } = await scenario();
+        g1.claim([ids[0]]);
+        await settle();
+        net.drop(g1Peer, false); // nobody notices yet
+        g1Store.updateScore(ids[0], 'tucked', 5);
+        await settle();
+        expect(get(host).players[0].scores.tucked).toBe(0);
+        expect(get(g1.view).pending).toBe(1);
+
+        // the connection is finally detected as dead, then comes back
+        net.drop(g1Peer);
+        await settle();
+        net.restore(g1Peer);
+        await settle();
+        expect(get(host).players[0].scores.tucked).toBe(5);
+        expect(get(g1.view).pending).toBe(0);
+    });
+
+    test('only the latest value of a field is kept while offline', async () => {
+        const { net, g1, g1Store, g1Peer, host, ids } = await scenario();
+        g1.claim([ids[0]]);
+        await settle();
+        net.drop(g1Peer);
+        await settle();
+        for (const v of [10, 20, 31]) g1Store.updateScore(ids[0], 'birds', v);
+        g1Store.updateRoundPlacement(ids[0], 1, 1);
+        expect(get(g1.view).pending).toBe(2);
+        net.restore(g1Peer);
+        await settle();
+        expect(get(host).players[0].scores.birds).toBe(31);
+        expect(get(host).players[0].roundPlacements[1]).toBe(1);
+    });
+
+    test('unconfirmed edits stay visible when other changes arrive meanwhile', async () => {
+        const { net, g1, g1Store, g1Peer, host, ids } = await scenario();
+        g1.claim([ids[0]]);
+        await settle();
+        net.drop(g1Peer, false);
+        g1Store.updateScore(ids[0], 'food', 4); // lost
+        net.restore(g1Peer); // reconnects before anyone noticed: same host
+        host.updateScore(ids[1], 'birds', 12); // the host's snapshot does not contain food = 4 yet
+        await settle();
+        expect(get(g1Store).players[1].scores.birds).toBe(12);
+        expect(get(g1Store).players[0].scores.food).toBe(4);
+    });
+
+    test('a lost edit is retried even when the table is quiet', async () => {
+        const net = hub();
+        const { host, ids } = setupHostGame();
+        createHostCore('R', net.connect(), host, { throttleMs: 0 });
+        const store = createGameStore({ persist: false });
+        const t = net.connect();
+        const g = createGuestCore('R', t, store, 'dev', 'Handy', { resendMs: 20 });
+        await settle();
+        g.claim([ids[0]]);
+        await settle();
+        net.drop(t.selfId, false);
+        store.updateScore(ids[0], 'bonus', 7); // lost, nobody notices
+        await settle();
+        net.restore(t.selfId); // hub re-introduces the peers …
+        await new Promise(r => setTimeout(r, 120)); // … and no other change happens
+        expect(get(host).players[0].scores.bonus).toBe(7);
+        expect(get(g.view).pending).toBe(0);
+        g.leave();
+    });
+
+    test('a rejected edit is dropped and the phone shows the host value again', async () => {
+        const { g1, g1Store, host, ids, hostCore } = await scenario();
+        g1.claim([ids[0]]);
+        await settle();
+        hostCore.release('device-1');
+        await settle();
+        g1Store.updateScore(ids[0], 'birds', 77);
+        await settle();
+        expect(get(host).players[0].scores.birds).toBe(0);
+        expect(get(g1Store).players[0].scores.birds).toBe(0);
+        expect(get(g1.view).pending).toBe(0);
     });
 });

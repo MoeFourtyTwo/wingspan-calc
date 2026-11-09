@@ -291,6 +291,11 @@ export function createGameStore({ persist = true }: { persist?: boolean } = {}) 
 
         isMirror: () => mirror !== null,
 
+        /** Re-apply a not yet confirmed edit on top of a host snapshot (guest side, not forwarded). */
+        replayLocal: (edit: PlayerEdit) => {
+            if (mirror) applyEdit(edit);
+        },
+
         addPlayer: hostOnly((name: string, color: string) =>
             update(state => {
                 if (state.players.length >= MAX_PLAYERS) return state;

@@ -90,7 +90,7 @@
     }
 
     function focusNext(k: string) {
-        const order = mine.flatMap((p) => typed.map((c) => key(p.id, c)));
+        const order = typed.flatMap((c) => mine.map((p) => key(p.id, c)));
         const next = inputs[order[order.indexOf(k) + 1]];
         if (next) {
             next.focus();
@@ -138,6 +138,22 @@
     let nectarActivePlayer = $derived(mine.find((p) => p.id === nectarActive));
 
     const fmtCat = (c: Category) => $t(c);
+
+    // ---- Follow the table: when the host moves on, scroll to that category ----
+    let sections: Record<string, HTMLElement> = $state({});
+    let lastAtTable: Category | undefined;
+    $effect(() => {
+        const c = atTable;
+        if (!c || c === lastAtTable) return;
+        const first = lastAtTable === undefined;
+        lastAtTable = c;
+        if (first || qs) return; // don't jump on open or while the quick-sum pad is up
+        const typing = document.activeElement instanceof HTMLInputElement;
+        if (typing) return;
+        tick().then(() =>
+            sections[c]?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }),
+        );
+    });
 </script>
 
 <div class="guest-scoring">
@@ -182,142 +198,155 @@
             <p class="hand">{$t("guestNoneClaimed")}</p>
         </div>
     {:else}
-        {#each mine as p, pi (p.id)}
-            {@const done = typed.filter((c) => view.filled[p.id]?.includes(c)).length}
-            <article class="pcard" style="--pc: {p.color}" in:swoop={{ y: 18, delay: 60 * pi + 60, duration: 360 }}>
-                <header class="pcard-head">
-                    <span class="pegg"><Egg color={p.color} size={34} /></span>
-                    <div class="pwho">
-                        <h3 class="pname">{p.name}</h3>
+        <!-- My players at a glance -->
+        <section class="totals" aria-label={$t("guestYourScoring")}>
+            {#each mine as p, pi (p.id)}
+                {@const done = typed.filter((c) => view.filled[p.id]?.includes(c)).length}
+                <div class="total-chip" style="--pc: {p.color}" in:swoop={{ y: 12, delay: 50 * pi, duration: 320 }}>
+                    <Egg color={p.color} size={26} />
+                    <span class="pwho">
+                        <span class="pname">{p.name}</span>
                         <span class="progress">{$t("guestProgress", { i: done, n: typed.length })}</span>
-                    </div>
+                    </span>
                     <span class="ptotal" aria-label="{p.total} {$t('pts')}">
                         <span class="sigma" aria-hidden="true">Σ</span>
                         <TweenedNumber value={p.total} />
                     </span>
-                </header>
+                </div>
+            {/each}
+        </section>
 
-                <ul class="rows">
-                    {#each typed as c (c)}
-                        {@const k = key(p.id, c)}
-                        {@const value = p.scores[c] ?? 0}
-                        {@const entered = !!view.filled[p.id]?.includes(c)}
-                        {@const signed = isSigned(c)}
-                        {@const max = maxFor(c)}
-                        <li class="row" class:entered class:now={c === atTable} style="--c: {CATEGORY_COLORS[c]}">
-                            <span class="cat">
-                                <span class="cat-icon"><CategoryIcon category={c} size={22} /></span>
-                                <span class="cat-name">{$t(c)}</span>
-                                {#if entered}
-                                    <span class="tick" title={$t("hostFilled")} in:pop={{ duration: 320 }}>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-                                        <span class="visually-hidden">{$t("hostFilled")}</span>
-                                    </span>
-                                {/if}
-                            </span>
-                            <span class="stepper">
-                                {#if signed}
-                                    <button class="step sign" onclick={() => toggleSign(p, c)} aria-label={$t("toggleSign", { name: p.name })}>±</button>
-                                {/if}
-                                <button
-                                    class="step"
-                                    onclick={() => step(p, c, -1)}
-                                    disabled={!signed && value <= 0}
-                                    aria-label="{$t(c)}: {$t('minusOne', { name: p.name })}"
-                                >−</button>
-                                <input
-                                    bind:this={inputs[k]}
-                                    use:syncValue={value}
-                                    class:negative={value < 0}
-                                    type="number"
-                                    inputmode={signed ? "text" : "numeric"}
-                                    enterkeyhint="next"
-                                    min={signed ? undefined : 0}
-                                    {max}
-                                    aria-label="{$t(c)}: {$t('pointsFor', { name: p.name })}"
-                                    oninput={(e) => {
-                                        const raw = e.currentTarget.value;
-                                        if (raw === "" || raw === "-") return;
-                                        setScore(p, c, Number(raw));
-                                    }}
-                                    onchange={(e) => setScore(p, c, Number(e.currentTarget.value) || 0)}
-                                    onblur={(e) => (e.currentTarget.value = String(current(p, c)))}
-                                    onkeydown={(e) => onKeydown(e, c, k)}
-                                    onfocus={(e) => e.currentTarget.select()}
-                                    placeholder="0"
-                                />
-                                <button
-                                    class="step"
-                                    onclick={() => step(p, c, 1)}
-                                    disabled={max !== undefined && value >= max}
-                                    aria-label="{$t(c)}: {$t('plusOne', { name: p.name })}"
-                                >+</button>
-                                <button
-                                    bind:this={qsButtons[k]}
-                                    class="step quick-sum"
-                                    onclick={() => (qs = { playerId: p.id, category: c })}
-                                    aria-label={$t("quickSumFor", { category: $t(c), name: p.name })}
-                                    aria-haspopup="dialog"
-                                    title={$t("quickSum")}
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="4" y="2.5" width="16" height="19" rx="3.5" />
-                                        <rect x="7.5" y="5.5" width="9" height="4" rx="1" />
-                                        <path d="M8 13.5h.01M12 13.5h.01M16 13.5h.01M8 17.5h.01M12 17.5h.01M16 13.5v4" stroke-width="2.8" />
-                                    </svg>
+        <!-- Same order as on the host: one section per category -->
+        {#each categories as c, ci (c)}
+            {@const placement = isPlacementCategory(c, options)}
+            {@const enteredCount = mine.filter((p) => view.filled[p.id]?.includes(c)).length}
+            <section
+                class="cat-section"
+                class:now={c === atTable}
+                style="--c: {CATEGORY_COLORS[c]}"
+                bind:this={sections[c]}
+                in:swoop={{ y: 18, delay: 40 * ci + 60, duration: 340 }}
+            >
+                <h3 class="section-title">
+                    <span class="cat-icon"><CategoryIcon category={c} size={22} /></span>
+                    <span class="section-name">{$t(c)}</span>
+                    {#if c === atTable}
+                        <span class="now-badge">{$t("guestNow")}</span>
+                    {:else if !placement && enteredCount === mine.length}
+                        <span class="tick" title={$t("hostFilled")} in:pop={{ duration: 320 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                            <span class="visually-hidden">{$t("hostFilled")}</span>
+                        </span>
+                    {/if}
+                </h3>
+
+                {#if c === "round_goals" && placement}
+                    {#if mine.length > 1}
+                        <div class="avatars" role="radiogroup" aria-label={$t("selectPlayerPlace")}>
+                            {#each mine as p (p.id)}
+                                <button class="avatar" class:selected={roundActive === p.id} role="radio" aria-checked={roundActive === p.id} onclick={() => (roundPick = p.id)}>
+                                    <Egg color={p.color} size={20} speckled={false} />
+                                    <span>{p.name}</span>
                                 </button>
-                            </span>
-                        </li>
-                    {/each}
-                </ul>
-            </article>
+                            {/each}
+                        </div>
+                    {/if}
+                    {#if roundActivePlayer}
+                        <p class="instruction">{$t("tapGrid")} <strong style="--c: {roundActivePlayer.color}">{roundActivePlayer.name}</strong></p>
+                    {/if}
+                    <RoundGoalGrid activePlayerId={roundActive} />
+                {:else if c === "nectar"}
+                    {#if mine.length > 1}
+                        <div class="avatars" role="radiogroup" aria-label={$t("selectPlayerPlace")}>
+                            {#each mine as p (p.id)}
+                                <button class="avatar" class:selected={nectarActive === p.id} role="radio" aria-checked={nectarActive === p.id} onclick={() => (nectarPick = p.id)}>
+                                    <Egg color={p.color} size={20} speckled={false} />
+                                    <span>{p.name}</span>
+                                </button>
+                            {/each}
+                        </div>
+                    {/if}
+                    {#if nectarActivePlayer}
+                        <p class="instruction">{$t("tapGrid")} <strong style="--c: {nectarActivePlayer.color}">{nectarActivePlayer.name}</strong></p>
+                    {/if}
+                    <NectarGoalGrid activePlayerId={nectarActive} />
+                {:else}
+                    <ul class="rows">
+                        {#each mine as p (p.id)}
+                            {@const k = key(p.id, c)}
+                            {@const value = p.scores[c] ?? 0}
+                            {@const entered = !!view.filled[p.id]?.includes(c)}
+                            {@const signed = isSigned(c)}
+                            {@const max = maxFor(c)}
+                            <li class="row" class:entered>
+                                <span class="cat">
+                                    <Egg color={p.color} size={22} speckled={false} />
+                                    <span class="cat-name">{p.name}</span>
+                                    {#if entered}
+                                        <span class="tick" title={$t("hostFilled")} in:pop={{ duration: 320 }}>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                                            <span class="visually-hidden">{$t("hostFilled")}</span>
+                                        </span>
+                                    {/if}
+                                </span>
+                                <span class="stepper">
+                                    {#if signed}
+                                        <button class="step sign" onclick={() => toggleSign(p, c)} aria-label={$t("toggleSign", { name: p.name })}>±</button>
+                                    {/if}
+                                    <button
+                                        class="step"
+                                        onclick={() => step(p, c, -1)}
+                                        disabled={!signed && value <= 0}
+                                        aria-label="{$t(c)}: {$t('minusOne', { name: p.name })}"
+                                    >−</button>
+                                    <input
+                                        bind:this={inputs[k]}
+                                        use:syncValue={value}
+                                        class:negative={value < 0}
+                                        type="number"
+                                        inputmode={signed ? "text" : "numeric"}
+                                        enterkeyhint="next"
+                                        min={signed ? undefined : 0}
+                                        {max}
+                                        aria-label="{$t(c)}: {$t('pointsFor', { name: p.name })}"
+                                        oninput={(e) => {
+                                            const raw = e.currentTarget.value;
+                                            if (raw === "" || raw === "-") return;
+                                            setScore(p, c, Number(raw));
+                                        }}
+                                        onchange={(e) => setScore(p, c, Number(e.currentTarget.value) || 0)}
+                                        onblur={(e) => (e.currentTarget.value = String(current(p, c)))}
+                                        onkeydown={(e) => onKeydown(e, c, k)}
+                                        onfocus={(e) => e.currentTarget.select()}
+                                        placeholder="0"
+                                    />
+                                    <button
+                                        class="step"
+                                        onclick={() => step(p, c, 1)}
+                                        disabled={max !== undefined && value >= max}
+                                        aria-label="{$t(c)}: {$t('plusOne', { name: p.name })}"
+                                    >+</button>
+                                    <button
+                                        bind:this={qsButtons[k]}
+                                        class="step quick-sum"
+                                        onclick={() => (qs = { playerId: p.id, category: c })}
+                                        aria-label={$t("quickSumFor", { category: $t(c), name: p.name })}
+                                        aria-haspopup="dialog"
+                                        title={$t("quickSum")}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="4" y="2.5" width="16" height="19" rx="3.5" />
+                                            <rect x="7.5" y="5.5" width="9" height="4" rx="1" />
+                                            <path d="M8 13.5h.01M12 13.5h.01M16 13.5h.01M8 17.5h.01M12 17.5h.01M16 13.5v4" stroke-width="2.8" />
+                                        </svg>
+                                    </button>
+                                </span>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            </section>
         {/each}
-
-        {#if options.roundGoalMode === "competitive"}
-            <section class="placement" in:swoop={{ y: 18, delay: 120, duration: 360 }}>
-                <h3 class="section-title">
-                    <CategoryIcon category="round_goals" size={26} />
-                    {$t("round_goals")}
-                </h3>
-                {#if mine.length > 1}
-                    <div class="avatars" role="radiogroup" aria-label={$t("selectPlayerPlace")}>
-                        {#each mine as p (p.id)}
-                            <button class="avatar" class:selected={roundActive === p.id} role="radio" aria-checked={roundActive === p.id} onclick={() => (roundPick = p.id)}>
-                                <Egg color={p.color} size={20} speckled={false} />
-                                <span>{p.name}</span>
-                            </button>
-                        {/each}
-                    </div>
-                {/if}
-                {#if roundActivePlayer}
-                    <p class="instruction">{$t("tapGrid")} <strong style="--c: {roundActivePlayer.color}">{roundActivePlayer.name}</strong></p>
-                {/if}
-                <RoundGoalGrid activePlayerId={roundActive} />
-            </section>
-        {/if}
-
-        {#if options.oceania}
-            <section class="placement" in:swoop={{ y: 18, delay: 160, duration: 360 }}>
-                <h3 class="section-title">
-                    <CategoryIcon category="nectar" size={26} />
-                    {$t("nectar")}
-                </h3>
-                {#if mine.length > 1}
-                    <div class="avatars" role="radiogroup" aria-label={$t("selectPlayerPlace")}>
-                        {#each mine as p (p.id)}
-                            <button class="avatar" class:selected={nectarActive === p.id} role="radio" aria-checked={nectarActive === p.id} onclick={() => (nectarPick = p.id)}>
-                                <Egg color={p.color} size={20} speckled={false} />
-                                <span>{p.name}</span>
-                            </button>
-                        {/each}
-                    </div>
-                {/if}
-                {#if nectarActivePlayer}
-                    <p class="instruction">{$t("tapGrid")} <strong style="--c: {nectarActivePlayer.color}">{nectarActivePlayer.name}</strong></p>
-                {/if}
-                <NectarGoalGrid activePlayerId={nectarActive} />
-            </section>
-        {/if}
     {/if}
 </div>
 
@@ -415,36 +444,85 @@
         color: var(--ink-soft);
     }
 
-    /* ---------- Player cards ---------- */
-    .pcard {
-        background: var(--card);
-        border: 1.5px solid var(--line);
-        border-top: 5px solid var(--pc);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        padding: 10px 10px 6px;
+    /* ---------- My players at a glance ---------- */
+    .totals {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
 
-    .pcard-head {
+    .total-chip {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 0 2px 8px;
-        border-bottom: 1.5px dashed var(--line);
+        padding: 8px 12px;
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-left: 5px solid var(--pc);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
     }
 
-    .pegg {
-        display: block;
-        transform-origin: 50% 90%;
+    /* ---------- One section per category (same order as the host) ---------- */
+    .cat-section {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-top: 5px solid var(--c);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        padding: 10px 10px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        scroll-margin-top: 12px;
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
     }
 
-    .pcard:focus-within .pegg {
-        animation: wobble 0.5s ease;
+    .cat-section.now {
+        box-shadow:
+            0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent),
+            var(--shadow-md);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 1.15rem;
+    }
+
+    .section-name {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .now-badge {
+        flex-shrink: 0;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-family: var(--font-hand);
+        font-size: 1rem;
+        color: var(--ink);
+        background: color-mix(in srgb, var(--c) 22%, #fffaf0);
+        animation: nudge-badge 1.6s ease-in-out infinite;
+    }
+
+    @keyframes nudge-badge {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-2px);
+        }
     }
 
     .pwho {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     .pname {
@@ -491,11 +569,6 @@
 
     .row:last-child {
         border-bottom: none;
-    }
-
-    .row.now .cat-name {
-        text-decoration: underline 3px color-mix(in srgb, var(--c) 55%, transparent);
-        text-underline-offset: 3px;
     }
 
     .cat {
@@ -611,17 +684,6 @@
     }
 
     /* ---------- Placement ---------- */
-    .placement {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 6px;
-    }
-
-    .placement .section-title {
-        margin-bottom: 0;
-    }
-
     .avatars {
         display: flex;
         flex-wrap: wrap;

@@ -32,7 +32,14 @@ export interface HostState {
     filled: Record<string, string[]>;
 }
 
-export type HostMessage = HostState | { t: 'bye'; reason: 'ended' };
+export type HostMessage = HostState | { t: 'bye'; reason: 'ended' } | { t: 'reject'; key: string };
+
+/** One slot per field: a newer edit of the same field replaces the older one. */
+export function editKey(e: PlayerEdit): string {
+    if (e.k === 'score') return `score:${e.playerId}:${e.category}`;
+    if (e.k === 'food') return `food:${e.playerId}`;
+    return `${e.k}:${e.playerId}:${e.index}`;
+}
 
 /** Room codes: no 0/O/1/I/L so they are easy to read aloud and type. */
 export const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -133,6 +140,7 @@ export function checkEdit(edit: PlayerEdit, game: GameState, claims: Record<stri
 export function parseHostMessage(raw: unknown): HostMessage | null {
     if (!isObj(raw)) return null;
     if (raw.t === 'bye') return { t: 'bye', reason: 'ended' };
+    if (raw.t === 'reject') return typeof raw.key === 'string' && raw.key.length <= 200 ? { t: 'reject', key: raw.key } : null;
     if (raw.t !== 'state' || typeof raw.seq !== 'number' || !isObj(raw.game)) return null;
     const strMap = (v: unknown): Record<string, string> =>
         isObj(v) ? Object.fromEntries(Object.entries(v).filter(([k, x]) => isId(k) && typeof x === 'string').map(([k, x]) => [k, String(x).slice(0, 64)])) : {};
