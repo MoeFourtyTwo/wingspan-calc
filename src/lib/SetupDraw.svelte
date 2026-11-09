@@ -243,7 +243,7 @@
     onDestroy(stopAll);
 </script>
 
-<div class="draw-screen">
+<div class="draw-screen screen">
     <header class="intro">
         <h2>{$t("setupHelper")}</h2>
         <p class="tagline">{$t("setupIntro")}</p>
@@ -358,7 +358,7 @@
         </div>
     {/if}
 
-    <div class="actions">
+    <div class="actions sticky-actions">
         <button class="btn-ghost skip-btn" onclick={skipHelper}>{$t("skip")}</button>
         <button class="btn-primary gold done-btn" onclick={done} disabled={!draw}>
             {$t("setupDone")}
@@ -369,8 +369,7 @@
 
 <style>
     .draw-screen {
-        display: flex;
-        flex-direction: column;
+        position: relative;
     }
 
     .intro {
@@ -756,14 +755,11 @@
 
     /* ---------- Actions ---------- */
     .actions {
-        position: sticky;
-        bottom: 12px;
         z-index: 50;
         display: grid;
         grid-template-columns: auto 1fr;
         align-items: center;
         gap: 8px;
-        padding-top: 8px;
     }
 
     .skip-btn {

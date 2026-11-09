@@ -162,7 +162,7 @@
     let quickSumNext = $derived(quickSumPlayerId ? players.find((p) => p.id === nextPlayerId(quickSumPlayerId!)) : undefined);
 </script>
 
-<div class="scoring">
+<div class="scoring screen">
     <div class="topbar">
         <button class="btn-ghost" onclick={() => gameStore.prevCategory()}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
@@ -343,7 +343,7 @@
         />
     {/if}
 
-    <div class="actions">
+    <div class="actions sticky-actions">
         <button class="btn-primary next-btn" class:gold={isLastCategory} onclick={() => gameStore.nextCategory()} disabled={!isCurrentCategoryValid}>
             {isLastCategory ? $t("finishScoring") : $t("next")}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
@@ -353,8 +353,7 @@
 
 <style>
     .scoring {
-        display: flex;
-        flex-direction: column;
+        flex: 1;
     }
 
     .topbar {
@@ -684,10 +683,7 @@
     }
 
     .actions {
-        position: sticky;
-        bottom: 12px;
+        /* push to the bottom when a category is short */
         margin-top: auto;
-        padding-top: 8px;
-        z-index: 5;
     }
 </style>

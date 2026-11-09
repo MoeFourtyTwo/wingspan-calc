@@ -104,7 +104,7 @@
     const setMode = (roundGoalMode: RoundGoalMode) => gameStore.setOptions({ roundGoalMode });
 </script>
 
-<div class="setup">
+<div class="setup screen">
     <div class="toolbar">
         <button
             class="btn-ghost"
@@ -284,7 +284,7 @@
         </fieldset>
     </section>
 
-    <div class="actions">
+    <div class="actions sticky-actions">
         <button class="btn-primary start-btn" disabled={players.length < 1} onclick={startGame}>
             {$t("startGame")}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -296,8 +296,7 @@
 
 <style>
     .setup {
-        display: flex;
-        flex-direction: column;
+        position: relative;
     }
 
     .toolbar {
@@ -634,13 +633,6 @@
         background: #e3eef8;
         box-shadow: 0 3px 0 var(--wetland);
         transform: translateY(-2px);
-    }
-
-    .actions {
-        position: sticky;
-        bottom: 12px;
-        padding-top: 8px;
-        z-index: 5;
     }
 
     .start-btn {
