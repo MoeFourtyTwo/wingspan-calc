@@ -4,6 +4,7 @@
  */
 import { derived, get, writable, type Readable } from 'svelte/store';
 import { roomFromHash } from './protocol';
+import { createWakeLock } from './wakeLock';
 import {
     hosting,
     joinGame,
@@ -117,5 +118,14 @@ export function initCollab(defaultLabel: () => string) {
     };
     if (!fromHash() && shouldResumeHosting()) host();
     addEventListener('hashchange', fromHash);
-    return () => removeEventListener('hashchange', fromHash);
+
+    // Keep the screen on while this phone shares or has joined a game.
+    const wake = createWakeLock();
+    const unsubscribe = derived([hosting, joined], ([$h, $j]) => !!$h || !!$j).subscribe(active => wake.set(active));
+
+    return () => {
+        removeEventListener('hashchange', fromHash);
+        unsubscribe();
+        wake.destroy();
+    };
 }

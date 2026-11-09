@@ -87,7 +87,14 @@
                 <span class="dot"></span>
             {/if}
         </span>
-        <span class="status-text" role="status" aria-live="polite">{statusText}</span>
+        <span class="status-text" role="status" aria-live="polite">
+            {statusText}
+            {#if (view?.pending ?? 0) > 0 && status !== "ended"}
+                <small class="pending">
+                    {status === "connected" ? $t("guestPendingSending", { n: view?.pending ?? 0 }) : $t("guestPendingWaiting", { n: view?.pending ?? 0 })}
+                </small>
+            {/if}
+        </span>
         <span class="room-chip" aria-label="{$t('guestRoom')} {[...room].join(' ')}">
             <small aria-hidden="true">{$t("guestRoom")}</small>
             <span aria-hidden="true">{room}</span>
@@ -177,6 +184,13 @@
         background: var(--card);
         border: 1.5px solid var(--line);
         box-shadow: var(--shadow-sm);
+    }
+
+    .status-text .pending {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--twig);
     }
 
     .status-bar.connected {
