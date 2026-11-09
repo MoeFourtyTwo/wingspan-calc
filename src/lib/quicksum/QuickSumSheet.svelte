@@ -81,7 +81,8 @@
                 { duration: 300, easing: "ease-out" },
             );
         }
-        tick().then(() => exprEl?.scrollTo({ top: exprEl.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" }));
+        // Instant scroll: the fly-in measures its landing spot, which must not move mid-flight.
+        tick().then(() => exprEl?.scrollTo({ top: exprEl.scrollHeight }));
     }
 
     function remove(id: number) {
@@ -100,20 +101,46 @@
     }
 
     // ---- Motion ----------------------------------------------------------
-    /** New terms fly from the tapped chip into their place in the expression. */
+    /**
+     * New terms fly from the tapped chip into their place in the expression.
+     * A copy flies on a fixed top layer: animating the term itself inside the
+     * scrolling expression would make it overflow and scroll the list while
+     * in flight. The real term appears exactly when the copy lands.
+     */
     function flyIn(node: Element): TransitionConfig {
         const from = lastChip;
-        if (!from) return pop(node);
+        if (!from || reducedMotion()) return pop(node);
+        if (exprEl) exprEl.scrollTop = exprEl.scrollHeight; // land where it will stay
         const to = node.getBoundingClientRect();
         const dx = from.left + from.width / 2 - (to.left + to.width / 2);
         const dy = from.top + from.height / 2 - (to.top + to.height / 2);
-        return {
-            duration: ms(380),
-            easing: backOut,
-            css: (t, u) =>
-                `transform: translate(${u * dx}px, ${u * dy}px) scale(${1.5 - 0.5 * t}) rotate(${u * -12}deg);` +
-                `opacity: ${Math.min(1, 0.4 + t)};`,
-        };
+        const duration = ms(360);
+
+        const ghost = node.cloneNode(true) as HTMLElement;
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.setAttribute("inert", "");
+        Object.assign(ghost.style, {
+            position: "fixed",
+            left: `${to.left}px`,
+            top: `${to.top}px`,
+            width: `${to.width}px`,
+            height: `${to.height}px`,
+            margin: "0",
+            pointerEvents: "none",
+            zIndex: "10000",
+        });
+        document.body.appendChild(ghost);
+        const anim = ghost.animate(
+            [
+                { transform: `translate(${dx}px, ${dy}px) scale(1.35)`, opacity: 0.6 },
+                { transform: "translate(0, 0) scale(1)", opacity: 1 },
+            ],
+            { duration, easing: "cubic-bezier(.3, 1.35, .55, 1)" },
+        );
+        const cleanup = () => ghost.remove();
+        anim.finished.then(cleanup, cleanup);
+
+        return { duration, css: (t) => `opacity: ${t > 0.98 ? 1 : 0};` };
     }
 
     function pop(_node: Element): TransitionConfig {
