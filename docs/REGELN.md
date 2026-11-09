@@ -110,16 +110,15 @@ Der Rechner fragt die Futtermarker nur ab, wenn sie für den Sieg tatsächlich e
 
 ---
 
-## 8. Spielaufbau: Rundenziele (Aufbau-Helfer) und Bonuskarten
+## 8. Spielaufbau: Rundenziele (Aufbau-Helfer)
 
 Umgesetzt in [`src/lib/setup/setupDraw.ts`](../src/lib/setup/setupDraw.ts):
 
 - **Rundenziele:** Aus allen Zielplättchen der verwendeten Erweiterungen werden 4 zufällig gezogen, eines pro Runde, jeweils mit zufälliger Seite nach oben (`drawSetup`).
   - Die Plättchen aus *Flügelschlag Asien* gehören zur Duell-Karte und werden hier nicht verwendet.
   - Auf dem Ozeanien-Plättchen kann auch „Kein Ziel“ liegen.
-- **Bonuskarten:** Jede Person erhält 2 zufällige Bonuskarten und behält am Ende des Aufbaus 1 davon. Der Rechner teilt sie bewusst **nicht** aus: Bonuskarten sind geheim, und auf einem gemeinsamen Bildschirm würde die Person am Handy alle Karten sehen.
 
-### Unterschiede zwischen deutscher und englischer Ausgabe (zum Aufbau am Tisch)
+## 9. Bonuskarten: deutsche und englische Ausgabe
 
 Einige Bonuskarten werten Begriffe in den **Vogelnamen**. Weil sich die deutschen Vogelnamen von den englischen unterscheiden, hat Feuerland diese Karten angepasst:
 
@@ -148,7 +147,7 @@ Alle anderen Kombinationen brauchen keine Anpassung. *Mittel- und Südamerika* i
 
 Quelle der Tabellen: Feuerland-Hinweise, zusammengetragen im Community-Projekt [wingsearch](https://github.com/navarog/wingsearch).
 
-## 9. Gefundene Inkonsistenzen in der bisherigen App (behoben)
+## 10. Gefundene Inkonsistenzen in der bisherigen App (behoben)
 
 | Problem | Korrektur |
 |---|---|
@@ -161,7 +160,7 @@ Quelle der Tabellen: Feuerland-Hinweise, zusammengetragen im Community-Projekt [
 | Begriff „Wasser“ statt des offiziellen „Feuchtgebiet“ | Begriffe an die Feuerland-Ausgabe angepasst |
 | Keine Obergrenze für die Spielerzahl | höchstens 7 Spieler (Schwarmmodus) |
 
-## 10. Offene Punkte
+## 11. Offene Punkte
 
 Die offiziellen PDF-Regelhefte waren bei der Erstellung nicht direkt abrufbar. Die folgenden Punkte stammen deshalb aus Rezensionen bzw. Zusammenfassungen und sollten mit dem gedruckten Regelheft abgeglichen werden:
 
