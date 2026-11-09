@@ -180,7 +180,7 @@ const en = {
     qsUnit_round: "{n} rounds",
     // --- Setup helper ---
     setupHelper: "Setup helper",
-    setupIntro: "Draw the round goals for this game. Bonus cards stay secret – everyone draws their own.",
+    setupIntro: "Draw the round goals for this game.",
     setupTable: "Which goal tiles are in the box?",
     setupSets: "Expansions",
     set_core: "Core game",
@@ -344,7 +344,7 @@ const de: Record<TranslationKey, string> = {
     qsUnit_round: "{n} Runden",
     // --- Setup helper ---
     setupHelper: "Aufbau-Helfer",
-    setupIntro: "Rundenziele für diese Partie ziehen. Bonuskarten bleiben geheim – die zieht jede Person selbst.",
+    setupIntro: "Rundenziele für diese Partie ziehen.",
     setupTable: "Welche Zielplättchen sind dabei?",
     setupSets: "Erweiterungen",
     set_core: "Grundspiel",

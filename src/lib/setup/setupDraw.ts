@@ -4,9 +4,6 @@
  * Base game setup (unchanged by the expansions): 4 round goal tiles are drawn
  * at random, one per round, each with a random side up. Tiles of all owned
  * expansions are shuffled together.
- *
- * Bonus cards are deliberately not dealt here: they are secret, and dealing
- * them on a shared screen would reveal everyone's hand.
  */
 import { GOAL_TILES } from '../data/goalTiles';
 import type { CardSet, GoalTile } from '../data/types';
