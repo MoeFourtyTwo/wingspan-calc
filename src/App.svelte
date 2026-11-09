@@ -13,6 +13,15 @@
     import Binoculars from "./lib/ui/Binoculars.svelte";
     import Checker from "./lib/checker/Checker.svelte";
     import { swoop } from "./lib/ui/motion";
+    import { onMount } from "svelte";
+    import { get } from "svelte/store";
+    import GuestView from "./lib/collab/GuestView.svelte";
+    import ShareSheet from "./lib/collab/ShareSheet.svelte";
+    import { joined } from "./lib/collab/session";
+    import { initCollab, shareOpen } from "./lib/collab/ui";
+
+    // Shared games: join from a #join=CODE link, or reopen a room after a reload.
+    onMount(() => initCollab(() => get(t)("guestDefaultLabel")));
 
     const ORDER: Phase[] = ["SETUP", "SELECTION", "DRAW", "SCORING", "RESULT", "STATS"];
 
@@ -82,6 +91,11 @@
     </header>
 
     <div class="content">
+        {#if $joined}
+            <div class="page" in:swoop={{ x: 48, y: 6, rotate: 1.5, duration: 420 }}>
+                <GuestView />
+            </div>
+        {:else}
         {#key phase}
             <div
                 class="page"
@@ -102,8 +116,13 @@
                 {/if}
             </div>
         {/key}
+        {/if}
     </div>
 </main>
+
+{#if $shareOpen && !$joined}
+    <ShareSheet onclose={() => shareOpen.set(false)} />
+{/if}
 
 {#if checkerOpen}
     <Checker onclose={() => (checkerOpen = false)} />

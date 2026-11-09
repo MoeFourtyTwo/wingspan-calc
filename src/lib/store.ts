@@ -192,18 +192,106 @@ function persistActiveGame(state: GameState) {
     }
 }
 
-function createGameStore() {
-    const store = writable<GameState>(loadActiveGame() ?? freshState());
-    store.subscribe(persistActiveGame);
+/**
+ * A change to one player's scores – the unit a guest phone sends to the host
+ * in a shared game. `index` is the round (0–3) or habitat (0–2).
+ */
+export type PlayerEdit =
+    | { k: 'score'; playerId: string; category: Category; value: number }
+    | { k: 'round'; playerId: string; index: number; rank: Placement }
+    | { k: 'nectar'; playerId: string; index: number; rank: Placement }
+    | { k: 'food'; playerId: string; amount: number };
+
+/** Exported for tests (independent host/guest stores); the app uses {@link gameStore}. */
+export function createGameStore({ persist = true }: { persist?: boolean } = {}) {
+    const store = writable<GameState>((persist ? loadActiveGame() : null) ?? freshState());
     const { subscribe, set, update } = store;
+
+    /**
+     * Mirror mode (guest phone in a shared game): the store shows the host's
+     * game, sends per-player edits to the host and ignores everything else.
+     * Saving is paused so the device's own unfinished game stays untouched.
+     */
+    let mirror: ((edit: PlayerEdit) => void) | null = null;
+    store.subscribe(state => {
+        if (persist && !mirror) persistActiveGame(state);
+    });
 
     const updatePlayers = (fn: (players: Player[], state: GameState) => Player[]) =>
         update(state => ({ ...state, players: recompute(fn(state.players, state), state.options) }));
 
+    /** Wrap a mutator so it does nothing on a guest phone. */
+    const hostOnly =
+        <A extends unknown[]>(fn: (...args: A) => void) =>
+        (...args: A) => {
+            if (!mirror) fn(...args);
+        };
+
+    function applyEdit(edit: PlayerEdit) {
+        const id = edit.playerId;
+        switch (edit.k) {
+            case 'score':
+                return updatePlayers(players =>
+                    players.map(p =>
+                        p.id === id
+                            ? { ...p, scores: { ...p.scores, [edit.category]: sanitizeCategoryPoints(edit.category, edit.value) } }
+                            : p,
+                    ),
+                );
+            case 'round':
+                return updatePlayers(players =>
+                    players.map(p =>
+                        p.id === id ? { ...p, roundPlacements: p.roundPlacements.map((v, i) => (i === edit.index ? edit.rank : v)) } : p,
+                    ),
+                );
+            case 'nectar':
+                return updatePlayers(players =>
+                    players.map(p =>
+                        p.id === id ? { ...p, nectarPlacements: p.nectarPlacements.map((v, i) => (i === edit.index ? edit.rank : v)) } : p,
+                    ),
+                );
+            case 'food':
+                return update(state => ({
+                    ...state,
+                    players: state.players.map(p => (p.id === id ? { ...p, leftoverFood: sanitizePoints(edit.amount) } : p)),
+                }));
+        }
+    }
+
+    /** Apply locally (optimistic on a guest) and forward to the host when mirroring. */
+    function edit(e: PlayerEdit) {
+        applyEdit(e);
+        mirror?.(e);
+    }
+
     return {
         subscribe,
 
-        addPlayer: (name: string, color: string) =>
+        /** Apply an edit received from a guest phone (host side). */
+        applyEdit: hostOnly(applyEdit),
+
+        /** Start mirroring a host's game on this (guest) device. */
+        enterMirror: (onEdit: (edit: PlayerEdit) => void) => {
+            mirror = onEdit;
+        },
+
+        /** Show the host's latest game state; ignored unless mirroring or if invalid. */
+        applySnapshot: (raw: unknown) => {
+            if (!mirror) return;
+            const restored = restoreGame(raw);
+            if (restored) set(restored);
+        },
+
+        /** Stop mirroring and bring back this device's own saved game. */
+        leaveMirror: () => {
+            if (!mirror) return;
+            mirror = null;
+            set((persist ? loadActiveGame() : null) ?? freshState());
+        },
+
+        isMirror: () => mirror !== null,
+
+        addPlayer: hostOnly((name: string, color: string) =>
             update(state => {
                 if (state.players.length >= MAX_PLAYERS) return state;
                 const player: Player = {
@@ -217,80 +305,62 @@ function createGameStore() {
                     leftoverFood: 0,
                 };
                 return { ...state, players: [...state.players, player] };
-            }),
+            })),
 
-        removePlayer: (id: string) => updatePlayers(players => players.filter(p => p.id !== id)),
+        removePlayer: hostOnly((id: string) => updatePlayers(players => players.filter(p => p.id !== id))),
 
-        setOptions: (options: Partial<GameOptions>) =>
+        setOptions: hostOnly((options: Partial<GameOptions>) =>
             update(state => {
                 const merged = { ...state.options, ...options };
                 return { ...state, options: merged, players: recompute(state.players, merged) };
-            }),
-
-        setStartPlayer: (id: string) => update(state => ({ ...state, startPlayerId: id })),
-        setSetup: (setup: SetupRecord | null) => update(state => ({ ...state, setup })),
-        setPhase: (phase: Phase) => update(state => ({ ...state, currentPhase: phase })),
-
-        updateScore: (playerId: string, category: Category, points: number) =>
-            updatePlayers(players =>
-                players.map(p =>
-                    p.id === playerId ? { ...p, scores: { ...p.scores, [category]: sanitizeCategoryPoints(category, points) } } : p,
-                ),
-            ),
-
-        setLeftoverFood: (playerId: string, amount: number) =>
-            update(state => ({
-                ...state,
-                players: state.players.map(p =>
-                    p.id === playerId ? { ...p, leftoverFood: sanitizePoints(amount) } : p,
-                ),
             })),
 
-        updateRoundPlacement: (playerId: string, round: number, rank: Placement) =>
-            updatePlayers(players =>
-                players.map(p =>
-                    p.id === playerId ? { ...p, roundPlacements: p.roundPlacements.map((v, i) => (i === round ? rank : v)) } : p,
-                ),
-            ),
+        setStartPlayer: hostOnly((id: string) => update(state => ({ ...state, startPlayerId: id }))),
+        setSetup: hostOnly((setup: SetupRecord | null) => update(state => ({ ...state, setup }))),
+        setPhase: hostOnly((phase: Phase) => update(state => ({ ...state, currentPhase: phase }))),
 
-        resetAllRoundPlacements: () =>
-            updatePlayers(players => players.map(p => ({ ...p, roundPlacements: Array(ROUND_COUNT).fill(0) }))),
+        updateScore: (playerId: string, category: Category, points: number) =>
+            edit({ k: 'score', playerId, category, value: points }),
+
+        setLeftoverFood: (playerId: string, amount: number) => edit({ k: 'food', playerId, amount }),
+
+        updateRoundPlacement: (playerId: string, round: number, rank: Placement) =>
+            edit({ k: 'round', playerId, index: round, rank }),
+
+        resetAllRoundPlacements: hostOnly(() =>
+            updatePlayers(players => players.map(p => ({ ...p, roundPlacements: Array(ROUND_COUNT).fill(0) })))),
 
         updateNectarPlacement: (playerId: string, habitat: number, rank: Placement) =>
-            updatePlayers(players =>
-                players.map(p =>
-                    p.id === playerId ? { ...p, nectarPlacements: p.nectarPlacements.map((v, i) => (i === habitat ? rank : v)) } : p,
-                ),
-            ),
+            edit({ k: 'nectar', playerId, index: habitat, rank }),
 
-        resetAllNectarPlacements: () =>
+        resetAllNectarPlacements: hostOnly(() =>
             updatePlayers(players =>
                 players.map(p => ({ ...p, nectarPlacements: Array(HABITATS.length).fill(0) })),
-            ),
+            )),
 
-        nextCategory: () =>
+        nextCategory: hostOnly(() =>
             update(state => {
                 const next = state.currentScoringCategoryIndex + 1;
                 if (next >= activeCategories(state.options).length) return { ...state, currentPhase: 'RESULT' };
                 return { ...state, currentScoringCategoryIndex: next };
-            }),
+            })),
 
-        prevCategory: () =>
+        prevCategory: hostOnly(() =>
             update(state => {
                 const prev = state.currentScoringCategoryIndex - 1;
                 if (prev < 0) return { ...state, currentPhase: 'SETUP', currentScoringCategoryIndex: 0 };
                 return { ...state, currentScoringCategoryIndex: prev };
-            }),
+            })),
 
-        backToScoring: () =>
+        backToScoring: hostOnly(() =>
             update(state => ({
                 ...state,
                 currentPhase: 'SCORING',
                 currentScoringCategoryIndex: activeCategories(state.options).length - 1,
-            })),
+            }))),
 
         /** Start a new game, keeping the chosen options. */
-        resetGame: () => set(freshState(get(store).options)),
+        resetGame: hostOnly(() => set(freshState(get(store).options))),
     };
 }
 

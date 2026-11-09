@@ -18,6 +18,8 @@
     import TweenedNumber from "./ui/TweenedNumber.svelte";
     import { swoop, pop } from "./ui/motion";
     import QuickSumSheet from "./quicksum/QuickSumSheet.svelte";
+    import HostPill from "./collab/HostPill.svelte";
+    import { hostView } from "./collab/ui";
 
     const CASUAL_MAX = CASUAL_ROUND_GOAL_MAX * ROUND_COUNT;
 
@@ -177,7 +179,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9" /><path d="M4 4v5h5" /></svg>
             {$t("abandonGame")}
         </button>
-        <span class="step-count hand">{currentCategoryIndex + 1} / {categories.length}</span>
+        <span class="topbar-end">
+            <HostPill />
+            <span class="step-count hand">{currentCategoryIndex + 1} / {categories.length}</span>
+        </span>
     </div>
 
     <!-- Progress: a branch that fills with feathers, a bird hops along -->
@@ -270,8 +275,23 @@
             {:else}
                 {#each players as player, i (player.id)}
                     {@const value = player.scores[currentCategory] ?? 0}
+                    {@const phone = $hostView?.claims[player.id]}
+                    {@const entered = !!phone && !!$hostView?.filled[player.id]?.includes(currentCategory)}
+                    {@const via = phone ? $t("hostBadge", { name: $hostView?.devices[phone]?.label ?? $t("anotherPhone") }) : ""}
                     <div class="player-card" in:swoop={{ y: 16, delay: 50 * i + 60, duration: 340 }}>
-                        <span class="egg-holder"><Egg color={player.color} size={30} /></span>
+                        <span class="egg-holder">
+                            <Egg color={player.color} size={30} />
+                            {#if phone}
+                                <span class="phone-badge" class:entered title={via} in:pop={{ duration: 320 }}>
+                                    {#if entered}
+                                        <svg class="tick" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                                    {:else}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3" /><path d="M10.5 18.5h3" /></svg>
+                                    {/if}
+                                    <span class="visually-hidden">{via}{entered ? `, ${$t("hostFilled")}` : ""}</span>
+                                </span>
+                            {/if}
+                        </span>
                         <div class="who">
                             <span class="player-name">{player.name}</span>
                             <span class="running">Σ <TweenedNumber value={player.total} /> {$t("pts")}</span>
@@ -375,6 +395,43 @@
     .abandon {
         color: var(--berry);
         font-size: 0.95rem;
+    }
+
+    .topbar-end {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .phone-badge {
+        position: absolute;
+        right: -9px;
+        bottom: -5px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        color: var(--wetland-deep);
+        background: #e3eef8;
+        border: 2px solid var(--card);
+        box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--wetland) 45%, transparent);
+    }
+
+    .phone-badge.entered {
+        color: #fff;
+        background: var(--forest);
+        box-shadow: 0 0 0 1.5px var(--forest-deep);
+    }
+
+    .phone-badge .tick {
+        animation: tick-in 0.4s var(--spring);
+    }
+
+    @keyframes tick-in {
+        from {
+            transform: scale(0) rotate(-30deg);
+        }
     }
 
     .step-count {
@@ -507,6 +564,8 @@
     }
 
     .egg-holder {
+        position: relative;
+        display: block;
         transform-origin: 50% 90%;
     }
 
