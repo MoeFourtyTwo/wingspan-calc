@@ -108,6 +108,9 @@ const en = {
     statHigh: "High",
     // --- Redesign additions ---
     appTagline: "field notes for the final tally",
+    abandonGame: "Abandon",
+    abandonConfirmShort: "Abandon the game and start over",
+    abandonConfirm: "Abandon this game? All entered points are discarded and the game is not saved.",
     switchLanguage: "Switch language",
     gameOptions: "Game options",
     oceania: "Oceania expansion (nectar)",
@@ -350,6 +353,9 @@ const de: Record<TranslationKey, string> = {
     statHigh: "Max",
     // --- Redesign additions ---
     appTagline: "Feldnotizen zur Schlusswertung",
+    abandonGame: "Abbrechen",
+    abandonConfirmShort: "Partie abbrechen und neu starten",
+    abandonConfirm: "Partie abbrechen? Alle eingetragenen Punkte werden verworfen und die Partie wird nicht gespeichert.",
     switchLanguage: "Sprache wechseln",
     gameOptions: "Spieloptionen",
     oceania: "Ozeanien-Erweiterung (Nektar)",

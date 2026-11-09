@@ -160,6 +160,11 @@
     let activePlayer = $derived(players.find((p) => p.id === activePlayerId));
     let quickSumPlayer = $derived(players.find((p) => p.id === quickSumPlayerId));
     let quickSumNext = $derived(quickSumPlayerId ? players.find((p) => p.id === nextPlayerId(quickSumPlayerId!)) : undefined);
+
+    /** Abandon the running game (e.g. after a demo); nothing is saved. */
+    function abandonGame() {
+        if (confirm($t("abandonConfirm"))) gameStore.resetGame();
+    }
 </script>
 
 <div class="scoring screen">
@@ -167,6 +172,10 @@
         <button class="btn-ghost" onclick={() => gameStore.prevCategory()}>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>
             {$t("back")}
+        </button>
+        <button class="btn-ghost abandon" onclick={abandonGame} title={$t("abandonConfirmShort")}>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9" /><path d="M4 4v5h5" /></svg>
+            {$t("abandonGame")}
         </button>
         <span class="step-count hand">{currentCategoryIndex + 1} / {categories.length}</span>
     </div>
@@ -361,6 +370,11 @@
         justify-content: space-between;
         align-items: center;
         margin: -4px -6px 0;
+    }
+
+    .abandon {
+        color: var(--berry);
+        font-size: 0.95rem;
     }
 
     .step-count {

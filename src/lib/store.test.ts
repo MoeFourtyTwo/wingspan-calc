@@ -646,4 +646,21 @@ describe('resetGame', () => {
         expect(s.gameId).not.toBe(oldId);
         expect(s.options).toEqual({ roundGoalMode: 'casual', oceania: false, americas: true });
     });
+
+    test('abandoning mid-scoring discards points, placements and the drawn goals', () => {
+        const [a, b] = addPlayers(2);
+        gameStore.setStartPlayer(a);
+        gameStore.setSetup({ goals: [0, 1, 2, 3].map(() => ({ tileId: 'core-forest', side: 0 as const })) });
+        gameStore.setPhase('SCORING');
+        gameStore.updateScore(a, 'birds', 40);
+        gameStore.updateRoundPlacement(b, 0, 1);
+        gameStore.nextCategory();
+        gameStore.nextCategory();
+        gameStore.resetGame();
+        const s = state();
+        expect(s.currentPhase).toBe('SETUP');
+        expect(s.players).toEqual([]);
+        expect(s.setup).toBeNull();
+        expect(s.currentScoringCategoryIndex).toBe(0);
+    });
 });
