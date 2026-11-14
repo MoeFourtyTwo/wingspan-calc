@@ -31,7 +31,7 @@ export const GOAL_TILES: readonly GoalTile[] = [
     { id: 'oc-cubes', set: 'oceania', sides: [{ en: 'Cubes on "Play a bird"', de: 'Aktionswürfel auf „Vogel spielen“' }, { en: 'Birds worth ≤ 3 [point]', de: 'Vögel mit Wert ≤ 3 [point]' }] },
     { id: 'oc-beak', set: 'oceania', sides: [{ en: 'Beak pointing left', de: 'Schnabel zeigt nach links' }, { en: 'Beak pointing right', de: 'Schnabel zeigt nach rechts' }] },
     { id: 'oc-food', set: 'oceania', sides: [{ en: '[fruit] + [seed] in food cost of your birds', de: '[fruit] + [seed] in den Futterkosten deiner Vögel' }, { en: '[invertebrate] in food cost of your birds', de: '[invertebrate] in den Futterkosten deiner Vögel' }] },
-    { id: 'oc-nogoal', set: 'oceania', sides: [{ en: '[rodent] + [fish] in food cost of your birds', de: '[rodent] + [fish] in den Futterkosten deiner Vögel' }, { en: 'No goal', de: 'Kein Ziel' }] },
+    { id: 'oc-nogoal', set: 'oceania', sides: [{ en: '[rodent] + [fish] in food cost of your birds', de: '[rodent] + [fish] in den Futterkosten deiner Vögel' }, { en: 'No goal', de: 'Kein Ziel', noGoal: true }] },
 
     // Americas expansion: 5 tiles
     { id: 'am-parity', set: 'americas', sides: [{ en: 'Birds worth even points (0, 2, 4, 6, 8)', de: 'Vögel mit geradem Punktwert (0, 2, 4, 6, 8)' }, { en: 'Birds worth odd points (1, 3, 5, 7, 9)', de: 'Vögel mit ungeradem Punktwert (1, 3, 5, 7, 9)' }] },

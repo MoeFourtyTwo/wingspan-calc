@@ -8,6 +8,8 @@ export type Lang = 'en' | 'de';
 export interface GoalSide {
     en: string;
     de: string;
+    /** The Oceania "No goal" side: nobody scores this round. */
+    noGoal?: true;
 }
 
 /** A double-sided round goal tile. */

@@ -117,6 +117,7 @@ Umgesetzt in [`src/lib/setup/setupDraw.ts`](../src/lib/setup/setupDraw.ts):
 - **Rundenziele:** Aus allen Zielplättchen der verwendeten Erweiterungen werden 4 zufällig gezogen, eines pro Runde, jeweils mit zufälliger Seite nach oben (`drawSetup`).
   - Die Plättchen aus *Flügelschlag Asien* gehören zur Duell-Karte und werden hier nicht verwendet.
   - Auf dem Ozeanien-Plättchen kann auch „Kein Ziel“ liegen.
+- **Hausregel (optional): „Kein Ziel“ nur in Runde 1** (`applyHouseRules`). Wird „Kein Ziel“ für Runde 2–4 gezogen, tauscht es den Platz mit dem Ziel von Runde 1 – so wie beim Ziehen von Hand. Weil nur die Reihenfolge der ohnehin gezogenen Ziele geändert wird, kommt „Kein Ziel“ genauso oft ins Spiel wie ohne die Hausregel.
 
 ## 9. Bonuskarten: deutsche und englische Ausgabe
 

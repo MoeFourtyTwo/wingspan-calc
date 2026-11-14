@@ -4,7 +4,7 @@
     import { gameStore } from "./store";
     import { t, language, type TranslationKey } from "./i18n";
     import type { CardSet } from "./data/types";
-    import { drawSetup, redrawGoal, type SetupDraw, type SetupError } from "./setup/setupDraw";
+    import { applyHouseRules, drawSetup, redrawGoal, type SetupDraw, type SetupError } from "./setup/setupDraw";
     import { GOAL_SETS, setupPrefs as prefs, type SetupPrefs } from "./setup/setupPrefs";
     import { flipGoal, fromRecord, goalText as renderGoal, toRecord, toggleSet, withGameOptions } from "./setup/setupRecord";
     import Bird from "./ui/Bird.svelte";
@@ -77,9 +77,15 @@
         gameStore.setSetup(draw ? toRecord(draw) : null);
     }
 
+    /** House rules currently switched on (only apply when their expansion is in play). */
+    const rules = () => {
+        const p = get(prefs);
+        return { noGoalFirstRound: p.noGoalFirstRound && p.sets.includes("oceania") };
+    };
+
     function drawAll() {
         stopAll();
-        const r = drawSetup(get(prefs).sets);
+        const r = drawSetup(get(prefs).sets, Math.random, rules());
         draw = r.ok ? r.draw : null;
         error = r.ok ? null : r.error;
         if (error) controlsOpen = true;
@@ -95,6 +101,14 @@
         const after = fn(before);
         prefs.set(after);
         if (after.sets.join() !== before.sets.join()) drawAll();
+        else if (draw && after.noGoalFirstRound !== before.noGoalFirstRound) {
+            // Switching the house rule on rearranges the current goals – no new draw.
+            const next = applyHouseRules(draw, rules());
+            if (next !== draw) {
+                draw = next;
+                save();
+            }
+        }
     }
 
     // ---------- The big deal ----------
@@ -156,7 +170,7 @@
 
     async function redraw(i: number) {
         if (!draw || busy.has(i) || dealing) return;
-        const next = redrawGoal(draw, i, get(prefs).sets);
+        const next = redrawGoal(draw, i, get(prefs).sets, Math.random, rules());
         const el = goalEl(i);
         if (next === draw) {
             play(el, [{ transform: "rotate(-6deg)" }, { transform: "rotate(5deg)" }, { transform: "none" }], { duration: 300 });
@@ -196,7 +210,7 @@
                 easing: "ease-in",
             });
         }
-        draw = flipGoal(draw, i);
+        draw = applyHouseRules(flipGoal(draw, i), rules());
         save();
         if (!reducedMotion()) {
             await play(
@@ -286,6 +300,24 @@
             {/each}
         </div>
 
+        {#if $prefs.sets.includes("oceania")}
+            <span class="label">{$t("houseRules")}</span>
+            <label class="toggle-row house-rule">
+                <span class="toggle-text">
+                    <span class="toggle-title">{$t("noGoalFirstRound")}</span>
+                    <span class="toggle-hint">{$t("noGoalFirstRoundHint")}</span>
+                </span>
+                <input
+                    type="checkbox"
+                    class="switch"
+                    checked={$prefs.noGoalFirstRound}
+                    onchange={(e) => {
+                        const on = e.currentTarget.checked;
+                        changePrefs((p) => ({ ...p, noGoalFirstRound: on }));
+                    }}
+                />
+            </label>
+        {/if}
         </div>
         {/if}
     </section>
@@ -442,6 +474,11 @@
 
     .chev.open {
         transform: rotate(180deg);
+    }
+
+    .house-rule {
+        border-bottom: none;
+        padding-top: 4px;
     }
 
     .controls-body {
