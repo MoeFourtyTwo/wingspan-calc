@@ -518,67 +518,6 @@
         color: var(--berry);
     }
 
-    /* Options */
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 0;
-        border-bottom: 1.5px dashed var(--line);
-        cursor: pointer;
-    }
-
-    .toggle-text {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .toggle-title {
-        font-weight: 800;
-        line-height: 1.25;
-    }
-
-    .toggle-hint {
-        font-size: 0.85rem;
-        color: var(--ink-soft);
-    }
-
-    .switch {
-        appearance: none;
-        flex-shrink: 0;
-        position: relative;
-        width: 52px;
-        height: 30px;
-        border-radius: 999px;
-        background: #d6ccb6;
-        box-shadow: inset 0 2px 3px rgba(60, 40, 20, 0.25);
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .switch::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
-        background: #fffaf0;
-        box-shadow: 0 2px 2px rgba(60, 40, 20, 0.3);
-        transition: transform 0.35s var(--spring);
-    }
-
-    .switch:checked {
-        background: var(--forest);
-    }
-
-    .switch:checked::after {
-        transform: translateX(22px) rotate(12deg);
-    }
-
     .board-side {
         border: none;
         padding-top: 12px;
